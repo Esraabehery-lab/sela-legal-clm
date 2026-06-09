@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 64" fill="none" role="img" aria-label="SELA">
+  <!-- "k" mark with the iconic diagonal carve, in white for dark backgrounds -->
+  <path d="M8 8 H40 L56 24 V56 H8 Z" fill="#D4D4D8"/>
+  <!-- "sela" wordmark in Inter Bold (white). System falls back gracefully. -->
+  <text x="72" y="46" font-family="Inter, system-ui, sans-serif" font-size="40" font-weight="700" fill="#D4D4D8" letter-spacing="-1">sela</text>
+</svg>

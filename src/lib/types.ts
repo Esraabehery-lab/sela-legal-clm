@@ -1,0 +1,192 @@
+// ============================================================
+// SELA Legal — AI Contract Lifecycle Management (CLM)
+// Domain model. Phase 1 vertical slice: DF intake → AI
+// classification/routing → AI draft generation → multi-level
+// approval → signature → obligation extraction → monitoring.
+// ============================================================
+
+export type Locale = "en" | "ar";
+
+/** Personas from the User Stories doc (Epics 1–14). */
+export type Role =
+  | "BUSINESS_USER" // creates DF requests, validates drafts
+  | "LEGAL_OPS" // routing / operations
+  | "PROCUREMENT" // approval stage 1
+  | "FINANCE" // approval stage 2
+  | "LEGAL" // approval stage 3
+  | "CONTRACT_OWNER" // signature + execution monitoring
+  | "AUDITOR"; // read-only history
+
+/** End-to-end lifecycle status of a DF request / contract. */
+export type RequestStatus =
+  | "SUBMITTED" // US-001
+  | "AI_ANALYZED" // US-003
+  | "DRAFT_GENERATED" // US-005
+  | "BU_REVIEW" // US-007
+  | "IN_APPROVAL" // US-008/009/010
+  | "APPROVED"
+  | "REJECTED"
+  | "SIGNED" // US-012
+  | "ACTIVE"; // US-016 (obligations being monitored)
+
+export type ContractCategory =
+  | "NDA"
+  | "SERVICE_AGREEMENT"
+  | "SUPPLY"
+  | "CONSULTING"
+  | "EMPLOYMENT"
+  | "LEASE"
+  | "PARTNERSHIP"
+  | "OTHER";
+
+export type Department =
+  | "LEGAL"
+  | "PROCUREMENT"
+  | "FINANCE"
+  | "BUSINESS"
+  | "IT"
+  | "HR";
+
+export type ApprovalStage = "PROCUREMENT" | "FINANCE" | "LEGAL";
+export type ApprovalDecision =
+  | "PENDING"
+  | "APPROVED"
+  | "REJECTED"
+  | "CHANGES_REQUESTED";
+
+export type Severity = "LOW" | "MEDIUM" | "HIGH";
+
+export type ObligationType =
+  | "DELIVERABLE"
+  | "PAYMENT"
+  | "MILESTONE"
+  | "RENEWAL"
+  | "COMPLIANCE";
+
+export type ObligationStatus =
+  | "PENDING"
+  | "IN_PROGRESS"
+  | "DONE"
+  | "OVERDUE";
+
+export interface DocumentFile {
+  id: string;
+  name: string;
+  kind: "PDF" | "WORD" | "IMAGE";
+  sizeKb: number;
+  uploadedAt: string;
+  /** Mock OCR/document-understanding excerpt (BR-06 / FR-03). */
+  ocrSummary?: string;
+}
+
+export interface RiskIndicator {
+  label: string;
+  labelAr: string;
+  severity: Severity;
+}
+
+/** Output of the AI classification engine (US-003 / US-004). */
+export interface AiClassification {
+  category: ContractCategory;
+  confidence: number; // 0..1
+  summary: string;
+  summaryAr: string;
+  stakeholders: string[];
+  riskIndicators: RiskIndicator[];
+  /** Ordered approval routing chain (US-004). */
+  routing: ApprovalStage[];
+  routingRationale: string;
+  routingRationaleAr: string;
+}
+
+export interface Clause {
+  id: string;
+  title: string;
+  titleAr: string;
+  body: string;
+  recommended: boolean;
+  /** Why the AI suggested this clause (US-006). */
+  rationale: string;
+  rationaleAr: string;
+}
+
+/** AI-generated contract draft (US-005), with version history (US-007). */
+export interface ContractDraft {
+  title: string;
+  bodyEn: string;
+  bodyAr: string;
+  clauses: Clause[];
+  version: number;
+  updatedAt: string;
+}
+
+export interface DraftVersion {
+  version: number;
+  bodyEn: string;
+  savedAt: string;
+  savedBy: string;
+  note: string;
+}
+
+export interface Approval {
+  stage: ApprovalStage;
+  decision: ApprovalDecision;
+  reviewer?: string;
+  comment?: string;
+  decidedAt?: string;
+}
+
+export interface ComplianceFinding {
+  id: string;
+  label: string;
+  labelAr: string;
+  severity: Severity;
+  resolved: boolean;
+}
+
+export interface Obligation {
+  id: string;
+  title: string;
+  titleAr: string;
+  type: ObligationType;
+  assignedDept: Department;
+  dueDate: string;
+  status: ObligationStatus;
+  amount?: number;
+  currency?: string;
+}
+
+export interface AuditEntry {
+  id: string;
+  at: string;
+  actor: string;
+  action: string;
+  detail: string;
+}
+
+export interface DFRequest {
+  id: string;
+  reference: string; // e.g. DF-2026-0001
+  title: string;
+  description: string;
+  department: Department;
+  requesterName: string;
+  requestedLanguage: Locale;
+  counterparty: string;
+  estimatedValue?: number;
+  currency: string;
+  status: RequestStatus;
+  createdAt: string;
+  updatedAt: string;
+  documents: DocumentFile[];
+  classification?: AiClassification;
+  draft?: ContractDraft;
+  versions: DraftVersion[];
+  approvals: Approval[];
+  obligations: Obligation[];
+  compliance: ComplianceFinding[];
+  riskScore?: number; // 0..100 (US-011)
+  signedAt?: string;
+  signedBy?: string;
+  audit: AuditEntry[];
+}

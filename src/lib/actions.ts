@@ -1,0 +1,290 @@
+"use server";
+
+// Server actions = the write side of the CLM. Each mutation updates the
+// in-memory store, records an audit entry (US-018), then revalidates.
+
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import type {
+  DFRequest,
+  Department,
+  Locale,
+  Role,
+  ApprovalStage,
+  ApprovalDecision,
+  ObligationStatus,
+} from "./types";
+import {
+  addRequest,
+  audit,
+  getRequest,
+  nextReference,
+} from "./store";
+import {
+  classify,
+  generateContract,
+  runCompliance,
+  extractObligations,
+  mockOcr,
+} from "./ai";
+import { LOCALE_COOKIE, ROLE_COOKIE, actorName } from "./roles";
+import { getRole, getLocale } from "./prefs";
+
+function whoami(): string {
+  return actorName(getRole(), getLocale());
+}
+
+export async function setLocale(locale: Locale): Promise<void> {
+  cookies().set(LOCALE_COOKIE, locale, { path: "/", maxAge: 60 * 60 * 24 * 365 });
+  revalidatePath("/", "layout");
+}
+
+export async function setRole(role: Role): Promise<void> {
+  cookies().set(ROLE_COOKIE, role, { path: "/", maxAge: 60 * 60 * 24 * 365 });
+  revalidatePath("/", "layout");
+}
+
+const createSchema = z.object({
+  title: z.string().min(3),
+  description: z.string().min(5),
+  department: z.string(),
+  counterparty: z.string().min(2),
+  requesterName: z.string().min(2),
+  estimatedValue: z.string().optional(),
+  currency: z.string().default("SAR"),
+  requestedLanguage: z.enum(["en", "ar"]).default("en"),
+});
+
+/**
+ * US-001 + US-003 + US-005: create the DF request, then immediately run AI
+ * classification, routing, draft generation and a compliance pass so the
+ * detail page opens fully populated.
+ */
+export async function createRequest(formData: FormData): Promise<void> {
+  const parsed = createSchema.parse({
+    title: formData.get("title"),
+    description: formData.get("description"),
+    department: formData.get("department"),
+    counterparty: formData.get("counterparty"),
+    requesterName: formData.get("requesterName"),
+    estimatedValue: formData.get("estimatedValue") ?? undefined,
+    currency: formData.get("currency") ?? "SAR",
+    requestedLanguage: (formData.get("requestedLanguage") as Locale) ?? "en",
+  });
+
+  const now = new Date().toISOString();
+  const reference = nextReference();
+  const value = parsed.estimatedValue ? Number(parsed.estimatedValue) : undefined;
+
+  const req: DFRequest = {
+    id: `req_${Date.now().toString(36)}`,
+    reference,
+    title: parsed.title,
+    description: parsed.description,
+    department: parsed.department as Department,
+    requesterName: parsed.requesterName,
+    requestedLanguage: parsed.requestedLanguage,
+    counterparty: parsed.counterparty,
+    estimatedValue: Number.isFinite(value) ? value : undefined,
+    currency: parsed.currency || "SAR",
+    status: "SUBMITTED",
+    createdAt: now,
+    updatedAt: now,
+    documents: [],
+    versions: [],
+    approvals: [],
+    obligations: [],
+    compliance: [],
+    audit: [],
+  };
+  addRequest(req);
+  audit(req, parsed.requesterName, "Request created", `${reference} submitted`);
+
+  // AI pipeline (US-003 → US-005 → US-011)
+  req.classification = classify(req);
+  req.status = "AI_ANALYZED";
+  audit(req, "AI Engine", "Request classified", req.classification.summary);
+
+  req.draft = generateContract(req);
+  req.status = "DRAFT_GENERATED";
+  audit(req, "AI Engine", "Draft generated", "Contract template generated from request");
+
+  const comp = runCompliance(req);
+  req.compliance = comp.findings;
+  req.riskScore = comp.riskScore;
+  audit(req, "AI Engine", "Compliance validated", `Risk score ${comp.riskScore}/100`);
+
+  revalidatePath("/requests");
+  redirect(`/requests/${req.id}`);
+}
+
+const docSchema = z.object({
+  requestId: z.string(),
+  name: z.string().min(1),
+  kind: z.enum(["PDF", "WORD", "IMAGE"]),
+});
+
+/** US-002: attach a supporting document (mock upload + OCR). */
+export async function addDocument(formData: FormData): Promise<void> {
+  const { requestId, name, kind } = docSchema.parse({
+    requestId: formData.get("requestId"),
+    name: formData.get("name"),
+    kind: formData.get("kind"),
+  });
+  const req = getRequest(requestId);
+  if (!req) return;
+  req.documents.push({
+    id: `doc_${Date.now().toString(36)}`,
+    name,
+    kind,
+    sizeKb: 200 + Math.floor(Math.random() * 1200),
+    uploadedAt: new Date().toISOString(),
+    ocrSummary: mockOcr(name),
+  });
+  audit(req, whoami(), "Document uploaded", name);
+  revalidatePath(`/requests/${req.id}`);
+}
+
+/** Re-run AI classification + draft (idempotent helper). */
+export async function regenerate(requestId: string): Promise<void> {
+  const req = getRequest(requestId);
+  if (!req) return;
+  req.classification = classify(req);
+  req.draft = generateContract(req);
+  const comp = runCompliance(req);
+  req.compliance = comp.findings;
+  req.riskScore = comp.riskScore;
+  if (req.status === "SUBMITTED" || req.status === "AI_ANALYZED")
+    req.status = "DRAFT_GENERATED";
+  audit(req, "AI Engine", "Draft regenerated", `Version ${req.draft.version}`);
+  revalidatePath(`/requests/${req.id}`);
+}
+
+const saveSchema = z.object({
+  requestId: z.string(),
+  bodyEn: z.string(),
+  note: z.string().optional(),
+});
+
+/** US-007: business unit edits the draft; version history is kept. */
+export async function saveDraft(formData: FormData): Promise<void> {
+  const { requestId, bodyEn, note } = saveSchema.parse({
+    requestId: formData.get("requestId"),
+    bodyEn: formData.get("bodyEn"),
+    note: formData.get("note") ?? "",
+  });
+  const req = getRequest(requestId);
+  if (!req || !req.draft) return;
+  // snapshot current version before overwriting
+  req.versions.unshift({
+    version: req.draft.version,
+    bodyEn: req.draft.bodyEn,
+    savedAt: req.draft.updatedAt,
+    savedBy: whoami(),
+    note: note || "Edited by business unit",
+  });
+  req.draft.bodyEn = bodyEn;
+  req.draft.version += 1;
+  req.draft.updatedAt = new Date().toISOString();
+  if (req.status === "DRAFT_GENERATED") req.status = "BU_REVIEW";
+  audit(req, whoami(), "Draft edited", `Saved version ${req.draft.version}`);
+  revalidatePath(`/requests/${req.id}`);
+}
+
+/** US-008..010: submit the validated draft into the approval chain. */
+export async function submitForApproval(requestId: string): Promise<void> {
+  const req = getRequest(requestId);
+  if (!req || !req.classification) return;
+  req.approvals = req.classification.routing.map((stage) => ({
+    stage,
+    decision: "PENDING" as ApprovalDecision,
+  }));
+  req.status = "IN_APPROVAL";
+  audit(
+    req,
+    whoami(),
+    "Submitted for approval",
+    `Routed ${req.classification.routing.join(" → ")} → Signature`,
+  );
+  revalidatePath(`/requests/${req.id}`);
+}
+
+const decideSchema = z.object({
+  requestId: z.string(),
+  stage: z.enum(["PROCUREMENT", "FINANCE", "LEGAL"]),
+  decision: z.enum(["APPROVED", "REJECTED", "CHANGES_REQUESTED"]),
+  comment: z.string().optional(),
+});
+
+/** US-008/009/010: record an approval decision for a stage. */
+export async function decideApproval(formData: FormData): Promise<void> {
+  const { requestId, stage, decision, comment } = decideSchema.parse({
+    requestId: formData.get("requestId"),
+    stage: formData.get("stage"),
+    decision: formData.get("decision"),
+    comment: formData.get("comment") ?? "",
+  });
+  const req = getRequest(requestId);
+  if (!req) return;
+  const ap = req.approvals.find((a) => a.stage === stage);
+  if (!ap) return;
+  ap.decision = decision as ApprovalDecision;
+  ap.reviewer = whoami();
+  ap.comment = comment;
+  ap.decidedAt = new Date().toISOString();
+  audit(req, whoami(), "Approval decision", `${stage}: ${decision}`);
+
+  if (decision === "REJECTED") {
+    req.status = "REJECTED";
+  } else if (req.approvals.every((a) => a.decision === "APPROVED")) {
+    req.status = "APPROVED";
+    audit(req, "System", "Fully approved", "All approval stages cleared");
+  }
+  revalidatePath(`/requests/${req.id}`);
+}
+
+/** US-012: mark the contract signed + executed, then extract obligations. */
+export async function signContract(requestId: string): Promise<void> {
+  const req = getRequest(requestId);
+  if (!req) return;
+  req.status = "SIGNED";
+  req.signedAt = new Date().toISOString();
+  req.signedBy = whoami();
+  audit(req, whoami(), "Contract signed", "Execution complete");
+
+  // US-013/014/015: AI extraction + department assignment
+  req.obligations = extractObligations(req);
+  req.status = "ACTIVE";
+  audit(
+    req,
+    "AI Engine",
+    "Obligations extracted",
+    `${req.obligations.length} obligations assigned to departments`,
+  );
+  revalidatePath(`/requests/${req.id}`);
+}
+
+const obSchema = z.object({
+  requestId: z.string(),
+  obligationId: z.string(),
+  status: z.enum(["PENDING", "IN_PROGRESS", "DONE", "OVERDUE"]),
+});
+
+/** US-016: update execution status of an obligation. */
+export async function updateObligation(formData: FormData): Promise<void> {
+  const { requestId, obligationId, status } = obSchema.parse({
+    requestId: formData.get("requestId"),
+    obligationId: formData.get("obligationId"),
+    status: formData.get("status"),
+  });
+  const req = getRequest(requestId);
+  if (!req) return;
+  const ob = req.obligations.find((o) => o.id === obligationId);
+  if (!ob) return;
+  ob.status = status as ObligationStatus;
+  audit(req, whoami(), "Obligation updated", `${ob.title} → ${status}`);
+  revalidatePath(`/requests/${req.id}`);
+  revalidatePath("/obligations");
+}

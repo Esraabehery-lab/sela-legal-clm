@@ -1,0 +1,437 @@
+// ============================================================
+// Mock AI engine for the CLM platform.
+//
+// These are deterministic, rule-based stand-ins for the eventual
+// LLM/OCR services (BR-01..BR-07, BR-11). They are intentionally
+// explainable: every output carries a rationale so the UI can show
+// *why* a decision was made (NFR: Explainability). Swap these for
+// real model calls (e.g. the Anthropic API) without touching callers.
+// ============================================================
+
+import type {
+  AiClassification,
+  Clause,
+  ComplianceFinding,
+  ContractCategory,
+  ContractDraft,
+  DFRequest,
+  Obligation,
+  RiskIndicator,
+} from "./types";
+import { CATEGORY_LABELS } from "./i18n";
+
+let counter = 0;
+function uid(prefix: string): string {
+  counter += 1;
+  return `${prefix}_${Date.now().toString(36)}_${counter}`;
+}
+
+const CATEGORY_KEYWORDS: Record<ContractCategory, string[]> = {
+  NDA: ["nda", "non-disclosure", "confidential", "secrecy", "سرية", "إفشاء"],
+  SERVICE_AGREEMENT: ["service", "services", "sla", "support", "خدمة", "خدمات"],
+  SUPPLY: ["supply", "goods", "delivery", "purchase", "vendor", "توريد", "بضائع"],
+  CONSULTING: ["consult", "advisory", "consultant", "استشار"],
+  EMPLOYMENT: ["employ", "hire", "salary", "staff", "توظيف", "موظف"],
+  LEASE: ["lease", "rent", "tenancy", "premises", "إيجار"],
+  PARTNERSHIP: ["partner", "joint venture", "jv", "alliance", "شراكة"],
+  OTHER: [],
+};
+
+function pickCategory(haystack: string): { category: ContractCategory; hits: number } {
+  let category: ContractCategory = "OTHER";
+  let hits = 0;
+  for (const cat of Object.keys(CATEGORY_KEYWORDS) as ContractCategory[]) {
+    const n = CATEGORY_KEYWORDS[cat].filter((k) => haystack.includes(k)).length;
+    if (n > hits) {
+      hits = n;
+      category = cat;
+    }
+  }
+  return { category, hits };
+}
+
+/** Classify a DF request and decide routing (US-003 / US-004, BR-01/02). */
+export function classify(req: DFRequest): AiClassification {
+  const haystack = `${req.title} ${req.description}`.toLowerCase();
+
+  const { category: best, hits: bestHits } = pickCategory(haystack);
+
+  const confidence = Math.min(0.55 + bestHits * 0.15, 0.97);
+  const value = req.estimatedValue ?? 0;
+
+  const riskIndicators: RiskIndicator[] = [];
+  if (value >= 1_000_000)
+    riskIndicators.push({
+      label: "High contract value",
+      labelAr: "قيمة عقد مرتفعة",
+      severity: "HIGH",
+    });
+  else if (value >= 250_000)
+    riskIndicators.push({
+      label: "Material contract value",
+      labelAr: "قيمة عقد جوهرية",
+      severity: "MEDIUM",
+    });
+  if (best === "OTHER")
+    riskIndicators.push({
+      label: "Uncategorised — manual review advised",
+      labelAr: "غير مصنّف — يُنصح بمراجعة يدوية",
+      severity: "MEDIUM",
+    });
+  if (best === "NDA")
+    riskIndicators.push({
+      label: "Confidential information exposure",
+      labelAr: "تعرّض لمعلومات سرية",
+      severity: "LOW",
+    });
+  if (req.documents.length === 0)
+    riskIndicators.push({
+      label: "No supporting documents attached",
+      labelAr: "لا توجد مستندات داعمة",
+      severity: "LOW",
+    });
+
+  // Routing chain (BR-02). Procurement+Finance involved when there is a
+  // counterparty / monetary value; Legal always reviews.
+  const routing: AiClassification["routing"] = [];
+  if (best === "SUPPLY" || best === "SERVICE_AGREEMENT" || best === "CONSULTING")
+    routing.push("PROCUREMENT");
+  if (value > 0 || best === "SUPPLY" || best === "LEASE") routing.push("FINANCE");
+  routing.push("LEGAL");
+  // de-dup while preserving order
+  const seen = new Set<string>();
+  const uniqueRouting = routing.filter((r) =>
+    seen.has(r) ? false : (seen.add(r), true),
+  ) as AiClassification["routing"];
+
+  const catLabel = CATEGORY_LABELS[best].en;
+  const stakeholders = stakeholdersFor(best, req.department);
+
+  return {
+    category: best,
+    confidence,
+    summary: `Classified as ${catLabel} with ${(confidence * 100).toFixed(
+      0,
+    )}% confidence based on request language and ${
+      req.documents.length
+    } attachment(s).`,
+    summaryAr: `تم التصنيف كـ ${CATEGORY_LABELS[best].ar} بثقة ${(
+      confidence * 100
+    ).toFixed(0)}% بناءً على وصف الطلب و ${req.documents.length} مرفق.`,
+    stakeholders,
+    riskIndicators,
+    routing: uniqueRouting,
+    routingRationale: `Routing ${uniqueRouting.join(
+      " → ",
+    )} → Signature. Legal review is mandatory; Procurement/Finance added based on counterparty and value.`,
+    routingRationaleAr: `مسار الاعتماد ${uniqueRouting.join(
+      " ← ",
+    )} ← التوقيع. مراجعة القانونية إلزامية، وتُضاف المشتريات/المالية بناءً على الطرف المقابل والقيمة.`,
+  };
+}
+
+function stakeholdersFor(cat: ContractCategory, dept: string): string[] {
+  const base = [`${dept} (Requesting Unit)`, "Legal Department"];
+  if (cat === "SUPPLY" || cat === "SERVICE_AGREEMENT")
+    base.push("Procurement", "Finance");
+  if (cat === "EMPLOYMENT") base.push("Human Resources");
+  if (cat === "LEASE") base.push("Facilities", "Finance");
+  return base;
+}
+
+/** Recommend clauses for a category (US-006, BR-04). */
+export function recommendClauses(category: ContractCategory): Clause[] {
+  const common: Clause[] = [
+    clause(
+      "Governing Law & Jurisdiction",
+      "القانون الحاكم والاختصاص",
+      "This Agreement shall be governed by the laws of the Kingdom of Saudi Arabia.",
+      true,
+      "Required by corporate policy for all contracts.",
+      "مطلوب بموجب سياسة الشركة لجميع العقود.",
+    ),
+    clause(
+      "Confidentiality",
+      "السرية",
+      "Each party shall keep confidential all non-public information disclosed under this Agreement.",
+      true,
+      "Protects proprietary information exchanged during performance.",
+      "يحمي المعلومات الخاصة المتبادلة أثناء التنفيذ.",
+    ),
+    clause(
+      "Term & Termination",
+      "المدة والإنهاء",
+      "This Agreement remains in force until terminated in accordance with its terms.",
+      true,
+      "Defines lifecycle and exit conditions.",
+      "يحدد دورة الحياة وشروط الإنهاء.",
+    ),
+  ];
+  const specific: Record<ContractCategory, Clause[]> = {
+    NDA: [
+      clause(
+        "Permitted Use",
+        "الاستخدام المسموح",
+        "Confidential Information may be used solely for the agreed purpose.",
+        true,
+        "Limits the scope of disclosure for NDAs.",
+        "يحد من نطاق الإفشاء في اتفاقيات السرية.",
+      ),
+    ],
+    SUPPLY: [
+      clause(
+        "Delivery & Acceptance",
+        "التسليم والقبول",
+        "Goods shall be delivered per the agreed schedule and subject to acceptance testing.",
+        true,
+        "Critical for supply contracts to define acceptance.",
+        "أساسي لعقود التوريد لتحديد القبول.",
+      ),
+      clause(
+        "Payment Terms",
+        "شروط الدفع",
+        "Payment shall be made within 30 days of a valid invoice.",
+        true,
+        "Standard net-30 payment protection.",
+        "حماية الدفع القياسية خلال 30 يوماً.",
+      ),
+    ],
+    SERVICE_AGREEMENT: [
+      clause(
+        "Service Levels (SLA)",
+        "مستويات الخدمة",
+        "Supplier shall meet the service levels set out in Schedule A.",
+        true,
+        "Ensures measurable performance obligations.",
+        "يضمن التزامات أداء قابلة للقياس.",
+      ),
+    ],
+    CONSULTING: [
+      clause(
+        "Intellectual Property",
+        "الملكية الفكرية",
+        "All work product created under this Agreement vests in the Company.",
+        true,
+        "Secures ownership of consultant deliverables.",
+        "يؤمّن ملكية مخرجات الاستشاري.",
+      ),
+    ],
+    EMPLOYMENT: [
+      clause(
+        "Non-Compete",
+        "عدم المنافسة",
+        "Employee shall not engage in competing activities for 12 months post-termination.",
+        false,
+        "Optional — enforceability varies; review with Legal.",
+        "اختياري — قابلية التنفيذ تختلف، يُراجع مع القانونية.",
+      ),
+    ],
+    LEASE: [
+      clause(
+        "Maintenance & Repairs",
+        "الصيانة والإصلاحات",
+        "Lessor is responsible for structural maintenance of the premises.",
+        true,
+        "Allocates maintenance responsibility.",
+        "يوزع مسؤولية الصيانة.",
+      ),
+    ],
+    PARTNERSHIP: [
+      clause(
+        "Profit & Loss Sharing",
+        "تقاسم الأرباح والخسائر",
+        "Profits and losses shall be shared in proportion to each party's contribution.",
+        true,
+        "Defines the economic split of the venture.",
+        "يحدد التقسيم الاقتصادي للمشروع.",
+      ),
+    ],
+    OTHER: [],
+  };
+  return [...common, ...specific[category]];
+}
+
+function clause(
+  title: string,
+  titleAr: string,
+  body: string,
+  recommended: boolean,
+  rationale: string,
+  rationaleAr: string,
+): Clause {
+  return { id: uid("cl"), title, titleAr, body, recommended, rationale, rationaleAr };
+}
+
+/** Generate an AI contract draft (US-005, BR-07). */
+export function generateContract(req: DFRequest): ContractDraft {
+  const cat = req.classification?.category ?? "OTHER";
+  const clauses = recommendClauses(cat);
+  const title = `${CATEGORY_LABELS[cat].en} between SELA and ${req.counterparty}`;
+
+  const valueLine = req.estimatedValue
+    ? `The total contract value is ${req.estimatedValue.toLocaleString()} ${req.currency}.`
+    : "The contract value is to be confirmed.";
+
+  const bodyEn = [
+    `${title.toUpperCase()}`,
+    ``,
+    `This ${CATEGORY_LABELS[cat].en} ("Agreement") is entered into between SELA ("Company") and ${req.counterparty} ("Counterparty").`,
+    ``,
+    `1. PURPOSE`,
+    req.description || "The purpose of this Agreement is as described in the originating request.",
+    ``,
+    `2. COMMERCIAL TERMS`,
+    valueLine,
+    ``,
+    `3. KEY CLAUSES`,
+    ...clauses
+      .filter((c) => c.recommended)
+      .map((c, i) => `3.${i + 1} ${c.title}. ${c.body}`),
+    ``,
+    `This draft was generated by the SELA CLM AI engine and is pending Business Unit validation and multi-level approval.`,
+  ].join("\n");
+
+  const bodyAr = [
+    `${CATEGORY_LABELS[cat].ar} بين سيلا و ${req.counterparty}`,
+    ``,
+    `تُبرم هذه ${CATEGORY_LABELS[cat].ar} ("الاتفاقية") بين سيلا ("الشركة") و ${req.counterparty} ("الطرف المقابل").`,
+    ``,
+    `١. الغرض`,
+    req.description || "الغرض من هذه الاتفاقية كما هو موضح في الطلب الأصلي.",
+    ``,
+    `٢. الشروط التجارية`,
+    req.estimatedValue
+      ? `إجمالي قيمة العقد ${req.estimatedValue.toLocaleString()} ${req.currency}.`
+      : "قيمة العقد قيد التأكيد.",
+    ``,
+    `٣. البنود الرئيسية`,
+    ...clauses
+      .filter((c) => c.recommended)
+      .map((c, i) => `٣.${i + 1} ${c.titleAr}. ${c.body}`),
+    ``,
+    `تم إنشاء هذه المسودة بواسطة محرك الذكاء الاصطناعي لإدارة العقود في سيلا وهي بانتظار التحقق والاعتماد.`,
+  ].join("\n");
+
+  return { title, bodyEn, bodyAr, clauses, version: 1, updatedAt: new Date().toISOString() };
+}
+
+/** Compliance validation + risk score (US-011, BR-05). */
+export function runCompliance(req: DFRequest): {
+  findings: ComplianceFinding[];
+  riskScore: number;
+} {
+  const findings: ComplianceFinding[] = [];
+  const clauses = req.draft?.clauses ?? [];
+  const hasGoverningLaw = clauses.some((c) =>
+    c.title.toLowerCase().includes("governing law"),
+  );
+  const hasConfidentiality = clauses.some((c) =>
+    c.title.toLowerCase().includes("confidential"),
+  );
+
+  if (!hasGoverningLaw)
+    findings.push(f("Missing Governing Law clause", "بند القانون الحاكم مفقود", "HIGH"));
+  if (!hasConfidentiality)
+    findings.push(f("Missing Confidentiality clause", "بند السرية مفقود", "MEDIUM"));
+  if ((req.estimatedValue ?? 0) >= 1_000_000)
+    findings.push(
+      f(
+        "High-value contract requires executive sign-off",
+        "العقد عالي القيمة يتطلب اعتماد الإدارة العليا",
+        "MEDIUM",
+      ),
+    );
+  if (req.documents.length === 0)
+    findings.push(
+      f("No supporting evidence on file", "لا توجد مستندات داعمة", "LOW"),
+    );
+
+  const weight = { HIGH: 30, MEDIUM: 15, LOW: 5 } as const;
+  const raw = findings.reduce((s, x) => s + weight[x.severity], 0);
+  const riskScore = Math.min(raw, 100);
+  return { findings, riskScore };
+}
+
+function f(label: string, labelAr: string, severity: ComplianceFinding["severity"]): ComplianceFinding {
+  return { id: uid("cf"), label, labelAr, severity, resolved: false };
+}
+
+/** Extract obligations from a signed contract (US-013/014/015, BR-11/12). */
+export function extractObligations(req: DFRequest): Obligation[] {
+  const cat = req.classification?.category ?? "OTHER";
+  const now = new Date();
+  const inDays = (d: number) =>
+    new Date(now.getTime() + d * 86_400_000).toISOString();
+
+  const out: Obligation[] = [];
+  out.push(
+    ob("Counterparty onboarding & kickoff", "تهيئة الطرف المقابل والانطلاق", "MILESTONE", "BUSINESS", inDays(14)),
+  );
+
+  if (req.estimatedValue) {
+    const first = Math.round(req.estimatedValue * 0.5);
+    out.push(
+      ob(
+        "First payment milestone",
+        "دفعة أولى",
+        "PAYMENT",
+        "FINANCE",
+        inDays(30),
+        first,
+        req.currency,
+      ),
+    );
+    out.push(
+      ob(
+        "Final payment on completion",
+        "الدفعة النهائية عند الإنجاز",
+        "PAYMENT",
+        "FINANCE",
+        inDays(120),
+        req.estimatedValue - first,
+        req.currency,
+      ),
+    );
+  }
+
+  if (cat === "SUPPLY" || cat === "SERVICE_AGREEMENT")
+    out.push(
+      ob("Delivery of goods / services", "تسليم البضائع / الخدمات", "DELIVERABLE", "PROCUREMENT", inDays(45)),
+    );
+  if (cat === "SERVICE_AGREEMENT")
+    out.push(
+      ob("Quarterly SLA review", "مراجعة مستوى الخدمة الفصلية", "COMPLIANCE", "LEGAL", inDays(90)),
+    );
+
+  out.push(
+    ob("Contract renewal review", "مراجعة تجديد العقد", "RENEWAL", "LEGAL", inDays(330)),
+  );
+  return out;
+}
+
+function ob(
+  title: string,
+  titleAr: string,
+  type: Obligation["type"],
+  assignedDept: Obligation["assignedDept"],
+  dueDate: string,
+  amount?: number,
+  currency?: string,
+): Obligation {
+  return {
+    id: uid("ob"),
+    title,
+    titleAr,
+    type,
+    assignedDept,
+    dueDate,
+    status: "PENDING",
+    amount,
+    currency,
+  };
+}
+
+/** Mock OCR / document understanding (BR-06, FR-03). */
+export function mockOcr(fileName: string): string {
+  return `Extracted text from "${fileName}": parties, scope, and commercial terms detected. Key entities and dates indexed for search.`;
+}
