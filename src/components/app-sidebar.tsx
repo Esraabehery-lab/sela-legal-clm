@@ -5,7 +5,8 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { SelaLogo } from "@/components/sela-logo";
 import { UI, t } from "@/lib/i18n";
-import type { Locale } from "@/lib/types";
+import type { Locale, Role } from "@/lib/types";
+import { canCreateRequest } from "@/lib/permissions";
 import {
   LayoutDashboard,
   FileText,
@@ -15,8 +16,9 @@ import {
   Plus,
 } from "lucide-react";
 
-export function AppSidebar({ locale }: { locale: Locale }) {
+export function AppSidebar({ locale, role }: { locale: Locale; role: Role }) {
   const pathname = usePathname();
+  const showNewRequest = canCreateRequest(role);
 
   const items = [
     { href: "/dashboard", label: UI.dashboard, icon: LayoutDashboard },
@@ -32,17 +34,19 @@ export function AppSidebar({ locale }: { locale: Locale }) {
         <SelaLogo size="default" withTagline={false} />
       </div>
 
-      <div className="px-3 py-4">
-        <Link
-          href="/requests/new"
-          className="flex h-10 items-center justify-center gap-2 rounded-lg bg-sela-yellow px-4 text-sm font-semibold text-canvas shadow-soft transition-colors hover:bg-sela-yellow-bright"
-        >
-          <Plus className="h-4 w-4" />
-          {t(locale, UI.newRequest.en, UI.newRequest.ar)}
-        </Link>
-      </div>
+      {showNewRequest && (
+        <div className="px-3 py-4">
+          <Link
+            href="/requests/new"
+            className="flex h-10 items-center justify-center gap-2 rounded-lg bg-sela-yellow px-4 text-sm font-semibold text-canvas shadow-soft transition-colors hover:bg-sela-yellow-bright"
+          >
+            <Plus className="h-4 w-4" />
+            {t(locale, UI.newRequest.en, UI.newRequest.ar)}
+          </Link>
+        </div>
+      )}
 
-      <nav className="flex flex-1 flex-col gap-1 px-3">
+      <nav className="flex flex-1 flex-col gap-1 px-3 pt-4">
         {items.map((it) => {
           const active =
             pathname === it.href || pathname.startsWith(it.href + "/");

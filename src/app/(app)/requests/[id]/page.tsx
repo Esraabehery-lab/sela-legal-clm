@@ -37,7 +37,15 @@ import {
   decideApproval,
   signContract,
 } from "@/lib/actions";
-import type { ApprovalStage, Role } from "@/lib/types";
+import {
+  canApproveStage,
+  canEditDraft as canEditDraftFn,
+  canSubmitForApproval,
+  canSign as canSignFn,
+  canManageObligations as canManageObligationsFn,
+  canUploadDocuments,
+  canRunAi,
+} from "@/lib/permissions";
 import {
   ArrowLeft,
   Sparkles,
@@ -52,11 +60,6 @@ import {
   Users,
 } from "lucide-react";
 
-function canApprove(role: Role, stage: ApprovalStage): boolean {
-  if (role === "LEGAL_OPS") return true;
-  return role === stage; // PROCUREMENT / FINANCE / LEGAL
-}
-
 export default function RequestDetailPage({
   params,
 }: {
@@ -68,16 +71,12 @@ export default function RequestDetailPage({
   if (!req) notFound();
 
   const cls = req.classification;
-  const canEditDraft =
-    role === "BUSINESS_USER" || role === "LEGAL_OPS";
-  const canSubmit =
-    (role === "BUSINESS_USER" || role === "LEGAL_OPS") &&
-    (req.status === "DRAFT_GENERATED" || req.status === "BU_REVIEW");
-  const canSign =
-    (role === "CONTRACT_OWNER" || role === "LEGAL_OPS") &&
-    req.status === "APPROVED";
-  const canManageObligations =
-    role === "CONTRACT_OWNER" || role === "LEGAL_OPS";
+  const canEditDraft = canEditDraftFn(role);
+  const canSubmit = canSubmitForApproval(role, req.status);
+  const canSign = canSignFn(role, req.status);
+  const canManageObligations = canManageObligationsFn(role);
+  const canUpload = canUploadDocuments(role);
+  const canReRunAi = canRunAi(role);
 
   return (
     <>
@@ -108,12 +107,14 @@ export default function RequestDetailPage({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <form action={regenerate.bind(null, req.id)}>
-            <Button variant="outline" size="sm" type="submit">
-              <Sparkles className="h-4 w-4" />
-              {t(locale, "Re-run AI", "إعادة التحليل")}
-            </Button>
-          </form>
+          {canReRunAi && (
+            <form action={regenerate.bind(null, req.id)}>
+              <Button variant="outline" size="sm" type="submit">
+                <Sparkles className="h-4 w-4" />
+                {t(locale, "Re-run AI", "إعادة التحليل")}
+              </Button>
+            </form>
+          )}
           {canSubmit && (
             <form action={submitForApproval.bind(null, req.id)}>
               <Button size="sm" type="submit">
@@ -293,7 +294,7 @@ export default function RequestDetailPage({
                       <p className="mt-1 text-xs text-ink-300">“{a.comment}”</p>
                     )}
 
-                    {a.decision === "PENDING" && canApprove(role, a.stage) && (
+                    {a.decision === "PENDING" && canApproveStage(role, a.stage) && (
                       <form
                         action={decideApproval}
                         className="mt-3 flex flex-wrap items-center gap-2"
@@ -531,28 +532,32 @@ export default function RequestDetailPage({
                 </div>
               ))}
 
-              <Separator />
-              {/* Mock upload (US-002 + OCR BR-06) */}
-              <form action={addDocument} className="space-y-2">
-                <input type="hidden" name="requestId" value={req.id} />
-                <Input
-                  name="name"
-                  placeholder={t(locale, "File name…", "اسم الملف…")}
-                  className="h-9"
-                  required
-                />
-                <div className="flex items-center gap-2">
-                  <Select name="kind" defaultValue="PDF" className="h-9">
-                    <option value="PDF">PDF</option>
-                    <option value="WORD">Word</option>
-                    <option value="IMAGE">Image</option>
-                  </Select>
-                  <Button type="submit" size="sm" variant="outline">
-                    <Upload className="h-4 w-4" />
-                    {t(locale, "Attach", "إرفاق")}
-                  </Button>
-                </div>
-              </form>
+              {canUpload && (
+                <>
+                  <Separator />
+                  {/* Mock upload (US-002 + OCR BR-06) */}
+                  <form action={addDocument} className="space-y-2">
+                    <input type="hidden" name="requestId" value={req.id} />
+                    <Input
+                      name="name"
+                      placeholder={t(locale, "File name…", "اسم الملف…")}
+                      className="h-9"
+                      required
+                    />
+                    <div className="flex items-center gap-2">
+                      <Select name="kind" defaultValue="PDF" className="h-9">
+                        <option value="PDF">PDF</option>
+                        <option value="WORD">Word</option>
+                        <option value="IMAGE">Image</option>
+                      </Select>
+                      <Button type="submit" size="sm" variant="outline">
+                        <Upload className="h-4 w-4" />
+                        {t(locale, "Attach", "إرفاق")}
+                      </Button>
+                    </div>
+                  </form>
+                </>
+              )}
             </CardContent>
           </Card>
 

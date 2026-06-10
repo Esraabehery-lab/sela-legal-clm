@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/status-badge";
 import { listRequests } from "@/lib/store";
-import { getLocale } from "@/lib/prefs";
+import { getLocale, getRole } from "@/lib/prefs";
+import { canCreateRequest } from "@/lib/permissions";
 import { t, CATEGORY_LABELS, label } from "@/lib/i18n";
 import { formatDate, formatMoney } from "@/lib/format";
 import { Plus, Search } from "lucide-react";
@@ -16,6 +17,7 @@ export default function RequestsPage({
   searchParams: { q?: string };
 }) {
   const locale = getLocale();
+  const role = getRole();
   const q = (searchParams.q ?? "").trim().toLowerCase();
 
   // US-019 — search by name, vendor, status, category
@@ -40,12 +42,14 @@ export default function RequestsPage({
           "كل طلب عقد وحالته في دورة الحياة",
         )}
         actions={
-          <Button asChild>
-            <Link href="/requests/new">
-              <Plus className="h-4 w-4" />
-              {t(locale, "New Request", "طلب جديد")}
-            </Link>
-          </Button>
+          canCreateRequest(role) ? (
+            <Button asChild>
+              <Link href="/requests/new">
+                <Plus className="h-4 w-4" />
+                {t(locale, "New Request", "طلب جديد")}
+              </Link>
+            </Button>
+          ) : undefined
         }
       />
 

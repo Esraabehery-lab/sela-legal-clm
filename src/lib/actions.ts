@@ -31,9 +31,28 @@ import {
 } from "./ai";
 import { LOCALE_COOKIE, ROLE_COOKIE, actorName } from "./roles";
 import { getRole, getLocale } from "./prefs";
+import {
+  canCreateRequest,
+  canUploadDocuments,
+  canRunAi,
+  canEditDraft,
+  canSubmitForApproval,
+  canApproveStage,
+  canSign,
+  canManageObligations,
+} from "./permissions";
 
 function whoami(): string {
   return actorName(getRole(), getLocale());
+}
+
+/** Throws if the current role is not allowed to perform the action. */
+function ensure(allowed: boolean): void {
+  if (!allowed) {
+    throw new Error(
+      "Not permitted: your current role cannot perform this action.",
+    );
+  }
 }
 
 export async function setLocale(locale: Locale): Promise<void> {
@@ -63,6 +82,7 @@ const createSchema = z.object({
  * detail page opens fully populated.
  */
 export async function createRequest(formData: FormData): Promise<void> {
+  ensure(canCreateRequest(getRole()));
   const parsed = createSchema.parse({
     title: formData.get("title"),
     description: formData.get("description"),
@@ -133,6 +153,7 @@ export async function addDocument(formData: FormData): Promise<void> {
     name: formData.get("name"),
     kind: formData.get("kind"),
   });
+  ensure(canUploadDocuments(getRole()));
   const req = getRequest(requestId);
   if (!req) return;
   req.documents.push({
@@ -149,6 +170,7 @@ export async function addDocument(formData: FormData): Promise<void> {
 
 /** Re-run AI classification + draft (idempotent helper). */
 export async function regenerate(requestId: string): Promise<void> {
+  ensure(canRunAi(getRole()));
   const req = getRequest(requestId);
   if (!req) return;
   req.classification = classify(req);
@@ -175,6 +197,7 @@ export async function saveDraft(formData: FormData): Promise<void> {
     bodyEn: formData.get("bodyEn"),
     note: formData.get("note") ?? "",
   });
+  ensure(canEditDraft(getRole()));
   const req = getRequest(requestId);
   if (!req || !req.draft) return;
   // snapshot current version before overwriting
@@ -197,6 +220,7 @@ export async function saveDraft(formData: FormData): Promise<void> {
 export async function submitForApproval(requestId: string): Promise<void> {
   const req = getRequest(requestId);
   if (!req || !req.classification) return;
+  ensure(canSubmitForApproval(getRole(), req.status));
   req.approvals = req.classification.routing.map((stage) => ({
     stage,
     decision: "PENDING" as ApprovalDecision,
@@ -226,6 +250,7 @@ export async function decideApproval(formData: FormData): Promise<void> {
     decision: formData.get("decision"),
     comment: formData.get("comment") ?? "",
   });
+  ensure(canApproveStage(getRole(), stage));
   const req = getRequest(requestId);
   if (!req) return;
   const ap = req.approvals.find((a) => a.stage === stage);
@@ -249,6 +274,7 @@ export async function decideApproval(formData: FormData): Promise<void> {
 export async function signContract(requestId: string): Promise<void> {
   const req = getRequest(requestId);
   if (!req) return;
+  ensure(canSign(getRole(), req.status));
   req.status = "SIGNED";
   req.signedAt = new Date().toISOString();
   req.signedBy = whoami();
@@ -279,6 +305,7 @@ export async function updateObligation(formData: FormData): Promise<void> {
     obligationId: formData.get("obligationId"),
     status: formData.get("status"),
   });
+  ensure(canManageObligations(getRole()));
   const req = getRequest(requestId);
   if (!req) return;
   const ob = req.obligations.find((o) => o.id === obligationId);
