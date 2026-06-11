@@ -2,10 +2,10 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { ScopeOfWorkField } from "@/components/scope-of-work-field";
 import { createRequest } from "@/lib/actions";
 import { getLocale, getRole } from "@/lib/prefs";
 import { canCreateRequest, RESPONSIBILITIES } from "@/lib/permissions";
@@ -180,23 +180,7 @@ export default function NewRequestPage() {
                   "مثال: اتفاقية خدمات تقنية مُدارة",
                 )}
               />
-              <div className="space-y-2 sm:col-span-2 lg:col-span-3">
-                <Label htmlFor="description">
-                  {t(locale, "Description / Scope", "الوصف / النطاق")}
-                </Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  required
-                  minLength={5}
-                  rows={3}
-                  placeholder={t(
-                    locale,
-                    "Describe the purpose and scope…",
-                    "صف الغرض والنطاق…",
-                  )}
-                />
-              </div>
+              <ScopeOfWorkField locale={locale} />
               <TextField
                 name="requesterName"
                 lbl={{ en: "Requester Name", ar: "اسم مقدم الطلب" }}
