@@ -89,9 +89,12 @@ export default function RequestDetailPage({
   const focusedReview = roleStage(role) !== null;
 
   // The Legal Reviewer sees the AI-generated contract once they have approved.
+  // The Business User does not see the generated contract.
   const legalApproved =
     req.approvals.find((a) => a.stage === "LEGAL")?.decision === "APPROVED";
-  const showContract = !focusedReview || (role === "LEGAL" && legalApproved);
+  const showContract =
+    (!focusedReview && role !== "BUSINESS_USER") ||
+    (role === "LEGAL" && legalApproved);
 
   // In focused review, show only the reviewer's own approval row (not the
   // whole chain). Everyone else sees the full chain.
