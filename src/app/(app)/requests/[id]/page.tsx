@@ -150,7 +150,15 @@ export default function RequestDetailPage({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              <p className="text-ink-200">{req.description}</p>
+              <div>
+                <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-ink-400">
+                  <FileText className="h-3.5 w-3.5" />
+                  {t(locale, "Scope of Work", "نطاق العمل")}
+                </div>
+                <div className="max-h-[460px] overflow-auto whitespace-pre-wrap rounded-lg border border-line bg-surface-1 p-4 text-[13px] leading-relaxed text-ink-200">
+                  {req.description}
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-3 text-xs text-ink-400">
                 <div>
                   <span className="text-ink-500">
