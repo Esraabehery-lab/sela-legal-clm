@@ -38,6 +38,7 @@ import {
   signContract,
 } from "@/lib/actions";
 import { ApprovalActions } from "@/components/approval-actions";
+import { ApprovalProgress } from "@/components/approval-progress";
 import {
   canApproveStage,
   canEditDraft as canEditDraftFn,
@@ -149,6 +150,13 @@ export default function RequestDetailPage({
           )}
         </div>
       </div>
+
+      {/* Approval progress tracker — visible to everyone, incl. the requester */}
+      {req.approvals.length > 0 && (
+        <div className="mb-6">
+          <ApprovalProgress approvals={req.approvals} locale={locale} />
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* ---------------- Left / main column ---------------- */}
