@@ -39,6 +39,7 @@ import {
 } from "@/lib/actions";
 import { ApprovalActions } from "@/components/approval-actions";
 import { ApprovalProgress } from "@/components/approval-progress";
+import { DownloadContractPdf } from "@/components/download-contract-pdf";
 import {
   canApproveStage,
   canEditDraft as canEditDraftFn,
@@ -284,7 +285,8 @@ export default function RequestDetailPage({
           {/* AI generated draft + clauses */}
           {showContract && req.draft && (
             <Card>
-              <CardHeader>
+              <CardHeader className="flex-row items-start justify-between gap-3">
+                <div className="space-y-1.5">
                 <CardTitle className="flex items-center gap-2 text-base">
                   <FileText className="h-4 w-4 text-sela-yellow" />
                   {t(locale, "AI-Generated Contract", "العقد المُولّد بالذكاء")}
@@ -303,6 +305,13 @@ export default function RequestDetailPage({
                         "تم إنشاؤه بالذكاء الاصطناعي بعد اعتماد القانونية.",
                       )}
                 </CardDescription>
+                </div>
+                <DownloadContractPdf
+                  title={req.draft.title}
+                  body={req.draft.bodyEn}
+                  fileName={`${req.reference}.pdf`}
+                  locale={locale}
+                />
               </CardHeader>
               <CardContent className="space-y-5">
                 <DraftEditor
@@ -312,6 +321,8 @@ export default function RequestDetailPage({
                   locale={locale}
                 />
 
+                {!focusedReview && (
+                  <>
                 <Separator />
 
                 {/* Recommended clauses (US-006) */}
@@ -345,6 +356,8 @@ export default function RequestDetailPage({
                     ))}
                   </div>
                 </div>
+                  </>
+                )}
 
                 {/* Version history (US-007) */}
                 {req.versions.length > 0 && (
