@@ -53,17 +53,21 @@ export const RESPONSIBILITIES: Record<Role, { en: string; ar: string }> = {
     en: "Create contract requests, upload documents, validate the AI draft and submit it for approval.",
     ar: "إنشاء طلبات العقود ورفع المستندات والتحقق من المسودة وإرسالها للاعتماد.",
   },
-  PROCUREMENT: {
-    en: "Review and approve or reject the Procurement stage of contract requests.",
-    ar: "مراجعة واعتماد أو رفض مرحلة المشتريات في طلبات العقود.",
+  HEAD_OF_BU: {
+    en: "First approver — review and approve or reject the request for the Business Unit.",
+    ar: "أول معتمد — مراجعة واعتماد أو رفض الطلب نيابة عن وحدة الأعمال.",
   },
-  FINANCE: {
-    en: "Validate financial terms and approve or reject the Finance stage.",
-    ar: "التحقق من الشروط المالية واعتماد أو رفض مرحلة المالية.",
+  CSCCO: {
+    en: "Second approver — review and approve or reject after the Head of Business Unit.",
+    ar: "ثاني معتمد — المراجعة والاعتماد أو الرفض بعد رئيس وحدة الأعمال.",
+  },
+  CFO: {
+    en: "Third approver — validate financials and approve or reject after CSCCO.",
+    ar: "ثالث معتمد — التحقق من الجوانب المالية والاعتماد أو الرفض بعد CSCCO.",
   },
   LEGAL: {
-    en: "Review legal terms, risks and AI recommendations, then approve or reject the Legal stage.",
-    ar: "مراجعة الشروط القانونية والمخاطر وتوصيات الذكاء الاصطناعي ثم اعتماد أو رفض المرحلة القانونية.",
+    en: "Final approver — review legal terms, risks and AI recommendations, then approve or reject.",
+    ar: "المعتمد النهائي — مراجعة الشروط القانونية والمخاطر وتوصيات الذكاء الاصطناعي ثم الاعتماد أو الرفض.",
   },
   CONTRACT_OWNER: {
     en: "Sign approved contracts and monitor obligations and deliverables.",
@@ -78,3 +82,17 @@ export const RESPONSIBILITIES: Record<Role, { en: string; ar: string }> = {
     ar: "صلاحية اطلاع فقط لعرض السجل الكامل وقرارات الذكاء الاصطناعي.",
   },
 };
+
+/**
+ * Sequential gate: a stage is actionable only when every earlier stage in the
+ * routing chain has been approved (Head of BU → CSCCO → CFO → Legal).
+ */
+export function isStageActionable(
+  approvals: { stage: ApprovalStage; decision: string }[],
+  stage: ApprovalStage,
+): boolean {
+  const idx = approvals.findIndex((a) => a.stage === stage);
+  if (idx === -1) return false;
+  if (approvals[idx]?.decision !== "PENDING") return false;
+  return approvals.slice(0, idx).every((a) => a.decision === "APPROVED");
+}

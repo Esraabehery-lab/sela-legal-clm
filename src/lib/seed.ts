@@ -2,6 +2,7 @@
 // something meaningful to show on first load.
 
 import type { DFRequest, AuditEntry } from "./types";
+import { STAGE_LABELS } from "./i18n";
 import {
   classify,
   generateContract,
@@ -145,7 +146,7 @@ export function seedRequests(): DFRequest[] {
     auditEntry(14, "Fatima Al-Harbi", "Request created", `${r2.reference} submitted`),
   ];
 
-  // 3) In multi-level approval (Procurement approved, Finance pending)
+  // 3) In approval — Head of BU approved, CSCCO is next in line
   const r3 = base(3, {
     title: "Marketing Consulting Engagement",
     description:
@@ -163,17 +164,17 @@ export function seedRequests(): DFRequest[] {
   r3.riskScore = comp3.riskScore;
   r3.approvals = r3.classification.routing.map((stage) => ({
     stage,
-    decision: stage === "PROCUREMENT" ? "APPROVED" : "PENDING",
-    reviewer: stage === "PROCUREMENT" ? "Procurement Reviewer" : undefined,
-    comment: stage === "PROCUREMENT" ? "Vendor pre-qualified. Approved." : undefined,
+    decision: stage === "HEAD_OF_BU" ? "APPROVED" : "PENDING",
+    reviewer: stage === "HEAD_OF_BU" ? "Head of Business Unit" : undefined,
+    comment: stage === "HEAD_OF_BU" ? "Business case approved." : undefined,
     decidedAt:
-      stage === "PROCUREMENT"
+      stage === "HEAD_OF_BU"
         ? new Date(Date.now() - 1 * 86_400_000).toISOString()
         : undefined,
   }));
   r3.audit = [
-    auditEntry(1, "Procurement Reviewer", "Approval decision", "Procurement: Approved"),
-    auditEntry(2, "Sara Al-Otaibi", "Submitted for approval", "Routed Procurement → Finance → Legal"),
+    auditEntry(1, "Head of Business Unit", "Approval decision", "Head of Business Unit: Approved"),
+    auditEntry(2, "Sara Al-Otaibi", "Submitted for approval", "Routed Head of BU → CSCCO → CFO → Legal"),
     auditEntry(2, "AI Engine", "Draft generated", "Consulting Agreement drafted"),
     auditEntry(11, "Sara Al-Otaibi", "Request created", `${r3.reference} submitted`),
   ];
@@ -196,7 +197,7 @@ export function seedRequests(): DFRequest[] {
   r4.approvals = r4.classification.routing.map((stage) => ({
     stage,
     decision: "APPROVED",
-    reviewer: `${stage} Reviewer`,
+    reviewer: STAGE_LABELS[stage].en,
     comment: "Approved.",
     decidedAt: new Date(Date.now() - 6 * 86_400_000).toISOString(),
   }));

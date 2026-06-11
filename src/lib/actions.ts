@@ -42,6 +42,7 @@ import {
   canApproveStage,
   canSign,
   canManageObligations,
+  isStageActionable,
 } from "./permissions";
 
 function whoami(): string {
@@ -321,12 +322,12 @@ export async function submitForApproval(requestId: string): Promise<void> {
 
 const decideSchema = z.object({
   requestId: z.string(),
-  stage: z.enum(["PROCUREMENT", "FINANCE", "LEGAL"]),
+  stage: z.enum(["HEAD_OF_BU", "CSCCO", "CFO", "LEGAL"]),
   decision: z.enum(["APPROVED", "REJECTED", "CHANGES_REQUESTED"]),
   comment: z.string().optional(),
 });
 
-/** US-008/009/010: record an approval decision for a stage. */
+/** US-008/009/010: record an approval decision for a stage (sequential). */
 export async function decideApproval(formData: FormData): Promise<void> {
   const { requestId, stage, decision, comment } = decideSchema.parse({
     requestId: formData.get("requestId"),
@@ -337,6 +338,8 @@ export async function decideApproval(formData: FormData): Promise<void> {
   ensure(canApproveStage(getRole(), stage));
   const req = getRequest(requestId);
   if (!req) return;
+  // Enforce the sequential chain — earlier stages must be approved first.
+  ensure(isStageActionable(req.approvals, stage));
   const ap = req.approvals.find((a) => a.stage === stage);
   if (!ap) return;
   ap.decision = decision as ApprovalDecision;

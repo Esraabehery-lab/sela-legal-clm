@@ -54,9 +54,10 @@ export const CATEGORY_LABELS: Record<ContractCategory, Pair> = {
 };
 
 export const STAGE_LABELS: Record<ApprovalStage, Pair> = {
-  PROCUREMENT: { en: "Procurement", ar: "المشتريات" },
-  FINANCE: { en: "Finance", ar: "المالية" },
-  LEGAL: { en: "Legal", ar: "الشؤون القانونية" },
+  HEAD_OF_BU: { en: "Head of Business Unit", ar: "رئيس وحدة الأعمال" },
+  CSCCO: { en: "CSCCO", ar: "الرئيس التنفيذي للسلسلة والتجارة" },
+  CFO: { en: "CFO", ar: "الرئيس المالي" },
+  LEGAL: { en: "Legal Reviewer", ar: "المراجع القانوني" },
 };
 
 export const DECISION_LABELS: Record<ApprovalDecision, Pair> = {

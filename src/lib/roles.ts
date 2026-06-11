@@ -8,10 +8,11 @@ export const ROLE_COOKIE = "sela_role";
 
 export const ROLE_LABELS: Record<Role, { en: string; ar: string }> = {
   BUSINESS_USER: { en: "Business User", ar: "مستخدم الأعمال" },
-  LEGAL_OPS: { en: "Legal Operations", ar: "العمليات القانونية" },
-  PROCUREMENT: { en: "Procurement Reviewer", ar: "مراجع المشتريات" },
-  FINANCE: { en: "Finance Reviewer", ar: "مراجع المالية" },
+  HEAD_OF_BU: { en: "Head of Business Unit", ar: "رئيس وحدة الأعمال" },
+  CSCCO: { en: "CSCCO", ar: "الرئيس التنفيذي للسلسلة والتجارة" },
+  CFO: { en: "CFO", ar: "الرئيس المالي" },
   LEGAL: { en: "Legal Reviewer", ar: "مراجع قانوني" },
+  LEGAL_OPS: { en: "Legal Operations", ar: "العمليات القانونية" },
   CONTRACT_OWNER: { en: "Contract Owner", ar: "مالك العقد" },
   AUDITOR: { en: "Auditor", ar: "مدقق" },
 };

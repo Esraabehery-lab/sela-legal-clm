@@ -11,11 +11,12 @@ export type Locale = "en" | "ar";
 
 /** Personas from the User Stories doc (Epics 1–14). */
 export type Role =
-  | "BUSINESS_USER" // creates DF requests, validates drafts
-  | "LEGAL_OPS" // routing / operations
-  | "PROCUREMENT" // approval stage 1
-  | "FINANCE" // approval stage 2
-  | "LEGAL" // approval stage 3
+  | "BUSINESS_USER" // creates DF requests, validates drafts, submits
+  | "HEAD_OF_BU" // approval stage 1
+  | "CSCCO" // approval stage 2
+  | "CFO" // approval stage 3
+  | "LEGAL" // approval stage 4 (legal reviewer)
+  | "LEGAL_OPS" // oversight / can act across stages
   | "CONTRACT_OWNER" // signature + execution monitoring
   | "AUDITOR"; // read-only history
 
@@ -49,7 +50,8 @@ export type Department =
   | "IT"
   | "HR";
 
-export type ApprovalStage = "PROCUREMENT" | "FINANCE" | "LEGAL";
+// Fixed sequential approval chain: Head of BU → CSCCO → CFO → Legal.
+export type ApprovalStage = "HEAD_OF_BU" | "CSCCO" | "CFO" | "LEGAL";
 export type ApprovalDecision =
   | "PENDING"
   | "APPROVED"

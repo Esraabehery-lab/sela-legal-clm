@@ -38,8 +38,9 @@ export default function DashboardPage() {
 
   // Approval bottleneck — pending decisions per stage
   const bottleneck: Record<ApprovalStage, number> = {
-    PROCUREMENT: 0,
-    FINANCE: 0,
+    HEAD_OF_BU: 0,
+    CSCCO: 0,
+    CFO: 0,
     LEGAL: 0,
   };
   requests.forEach((r) =>

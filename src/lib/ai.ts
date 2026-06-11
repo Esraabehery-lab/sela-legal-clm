@@ -115,18 +115,14 @@ export function classify(req: DFRequest): AiClassification {
       severity: "LOW",
     });
 
-  // Routing chain (BR-02). Procurement+Finance involved when there is a
-  // counterparty / monetary value; Legal always reviews.
-  const routing: AiClassification["routing"] = [];
-  if (best === "SUPPLY" || best === "SERVICE_AGREEMENT" || best === "CONSULTING")
-    routing.push("PROCUREMENT");
-  if (value > 0 || best === "SUPPLY" || best === "LEASE") routing.push("FINANCE");
-  routing.push("LEGAL");
-  // de-dup while preserving order
-  const seen = new Set<string>();
-  const uniqueRouting = routing.filter((r) =>
-    seen.has(r) ? false : (seen.add(r), true),
-  ) as AiClassification["routing"];
+  // Fixed sequential approval chain for every request:
+  // Head of Business Unit → CSCCO → CFO → Legal Reviewer → Signature.
+  const routing: AiClassification["routing"] = [
+    "HEAD_OF_BU",
+    "CSCCO",
+    "CFO",
+    "LEGAL",
+  ];
 
   const catLabel = CATEGORY_LABELS[best].en;
   const stakeholders = stakeholdersFor(best, req.department);
@@ -144,13 +140,11 @@ export function classify(req: DFRequest): AiClassification {
     ).toFixed(0)}% بناءً على وصف الطلب و ${req.documents.length} مرفق.`,
     stakeholders,
     riskIndicators,
-    routing: uniqueRouting,
-    routingRationale: `Routing ${uniqueRouting.join(
-      " → ",
-    )} → Signature. Legal review is mandatory; Procurement/Finance added based on counterparty and value.`,
-    routingRationaleAr: `مسار الاعتماد ${uniqueRouting.join(
-      " ← ",
-    )} ← التوقيع. مراجعة القانونية إلزامية، وتُضاف المشتريات/المالية بناءً على الطرف المقابل والقيمة.`,
+    routing,
+    routingRationale:
+      "Sequential approval: Head of Business Unit → CSCCO → CFO → Legal Reviewer → Signature. Each step unlocks only after the previous approval.",
+    routingRationaleAr:
+      "اعتماد متسلسل: رئيس وحدة الأعمال ← CSCCO ← CFO ← المراجع القانوني ← التوقيع. تُفتح كل مرحلة بعد اعتماد المرحلة السابقة.",
   };
 }
 

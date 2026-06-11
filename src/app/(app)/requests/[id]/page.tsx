@@ -46,6 +46,7 @@ import {
   canManageObligations as canManageObligationsFn,
   canUploadDocuments,
   canRunAi,
+  isStageActionable,
 } from "@/lib/permissions";
 import {
   ArrowLeft,
@@ -298,38 +299,55 @@ export default function RequestDetailPage({
                       <p className="mt-1 text-xs text-ink-300">“{a.comment}”</p>
                     )}
 
-                    {a.decision === "PENDING" && canApproveStage(role, a.stage) && (
-                      <form
-                        action={decideApproval}
-                        className="mt-3 flex flex-wrap items-center gap-2"
-                      >
-                        <input type="hidden" name="requestId" value={req.id} />
-                        <input type="hidden" name="stage" value={a.stage} />
-                        <Input
-                          name="comment"
-                          placeholder={t(locale, "Comment…", "تعليق…")}
-                          className="h-9 max-w-xs flex-1"
-                        />
-                        <Select
-                          name="decision"
-                          defaultValue="APPROVED"
-                          className="h-9 w-[150px]"
+                    {a.decision === "PENDING" &&
+                      (!isStageActionable(req.approvals, a.stage) ? (
+                        <p className="mt-2 text-xs text-ink-500">
+                          {t(
+                            locale,
+                            "Waiting for the previous approval.",
+                            "بانتظار اعتماد المرحلة السابقة.",
+                          )}
+                        </p>
+                      ) : canApproveStage(role, a.stage) ? (
+                        <form
+                          action={decideApproval}
+                          className="mt-3 flex flex-wrap items-center gap-2"
                         >
-                          <option value="APPROVED">
-                            {t(locale, "Approve", "اعتماد")}
-                          </option>
-                          <option value="CHANGES_REQUESTED">
-                            {t(locale, "Request Changes", "طلب تعديلات")}
-                          </option>
-                          <option value="REJECTED">
-                            {t(locale, "Reject", "رفض")}
-                          </option>
-                        </Select>
-                        <Button type="submit" size="sm">
-                          {t(locale, "Submit", "إرسال")}
-                        </Button>
-                      </form>
-                    )}
+                          <input type="hidden" name="requestId" value={req.id} />
+                          <input type="hidden" name="stage" value={a.stage} />
+                          <Input
+                            name="comment"
+                            placeholder={t(locale, "Comment…", "تعليق…")}
+                            className="h-9 max-w-xs flex-1"
+                          />
+                          <Select
+                            name="decision"
+                            defaultValue="APPROVED"
+                            className="h-9 w-[150px]"
+                          >
+                            <option value="APPROVED">
+                              {t(locale, "Approve", "اعتماد")}
+                            </option>
+                            <option value="CHANGES_REQUESTED">
+                              {t(locale, "Request Changes", "طلب تعديلات")}
+                            </option>
+                            <option value="REJECTED">
+                              {t(locale, "Reject", "رفض")}
+                            </option>
+                          </Select>
+                          <Button type="submit" size="sm">
+                            {t(locale, "Submit", "إرسال")}
+                          </Button>
+                        </form>
+                      ) : (
+                        <p className="mt-2 text-xs text-ink-500">
+                          {t(
+                            locale,
+                            "Awaiting this approver’s decision.",
+                            "بانتظار قرار هذا المعتمد.",
+                          )}
+                        </p>
+                      ))}
                   </div>
                 ))}
               </CardContent>
