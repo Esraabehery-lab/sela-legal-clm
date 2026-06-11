@@ -96,3 +96,40 @@ export function isStageActionable(
   if (approvals[idx]?.decision !== "PENDING") return false;
   return approvals.slice(0, idx).every((a) => a.decision === "APPROVED");
 }
+
+/** The approval stage a reviewer role owns, if any. */
+export function roleStage(role: Role): ApprovalStage | null {
+  if (
+    role === "HEAD_OF_BU" ||
+    role === "CSCCO" ||
+    role === "CFO" ||
+    role === "LEGAL"
+  )
+    return role;
+  return null;
+}
+
+type RequestLike = {
+  status: RequestStatus;
+  approvals: { stage: ApprovalStage; decision: string }[];
+};
+
+/** Whether a request is currently waiting on the given role to act. */
+export function awaitsAction(req: RequestLike, role: Role): boolean {
+  if (role === "AUDITOR") return false;
+  if (role === "BUSINESS_USER")
+    return req.status === "DRAFT_GENERATED" || req.status === "BU_REVIEW";
+  if (role === "CONTRACT_OWNER") return req.status === "APPROVED";
+
+  const stage = roleStage(role);
+  if (stage)
+    return req.status === "IN_APPROVAL" && isStageActionable(req.approvals, stage);
+
+  if (role === "LEGAL_OPS")
+    return (
+      (req.status === "IN_APPROVAL" &&
+        req.approvals.some((a) => isStageActionable(req.approvals, a.stage))) ||
+      req.status === "APPROVED"
+    );
+  return false;
+}

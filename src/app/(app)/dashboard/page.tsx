@@ -9,7 +9,9 @@ import {
 } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
 import { listRequests } from "@/lib/store";
-import { getLocale } from "@/lib/prefs";
+import { getLocale, getRole } from "@/lib/prefs";
+import { ROLE_LABELS } from "@/lib/roles";
+import { awaitsAction } from "@/lib/permissions";
 import { t, STATUS_LABELS, STAGE_LABELS, label } from "@/lib/i18n";
 import { formatDate } from "@/lib/format";
 import type { RequestStatus, ApprovalStage } from "@/lib/types";
@@ -19,11 +21,16 @@ import {
   FileSignature,
   AlertTriangle,
   ArrowRight,
+  Inbox,
 } from "lucide-react";
 
 export default function DashboardPage() {
   const locale = getLocale();
+  const role = getRole();
   const requests = listRequests();
+
+  // Requests currently waiting on the active role to act (their inbox).
+  const myQueue = role === "AUDITOR" ? [] : requests.filter((r) => awaitsAction(r, role));
 
   const inApproval = requests.filter((r) => r.status === "IN_APPROVAL").length;
   const active = requests.filter(
@@ -103,6 +110,57 @@ export default function DashboardPage() {
           "أداء العقود والكفاءة التشغيلية في لمحة",
         )}
       />
+
+      {/* Personal inbox — requests waiting on the active role to act */}
+      {role !== "AUDITOR" && (
+        <Card className="mb-6 border-sela-yellow/30 bg-sela-yellow/[0.04]">
+          <CardHeader className="flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Inbox className="h-4 w-4 text-sela-yellow" />
+              {t(locale, "Awaiting your action", "بانتظار إجرائك")}
+              <span className="rounded-full bg-sela-yellow/15 px-2 py-0.5 text-xs text-sela-yellow">
+                {myQueue.length}
+              </span>
+            </CardTitle>
+            <span className="text-xs text-ink-500">
+              {t(locale, "As", "بصفتك")}{" "}
+              {t(locale, ROLE_LABELS[role].en, ROLE_LABELS[role].ar)}
+            </span>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {myQueue.length === 0 ? (
+              <p className="py-2 text-sm text-ink-500">
+                {t(
+                  locale,
+                  "Nothing is waiting on you right now.",
+                  "لا يوجد ما ينتظر إجراءك حالياً.",
+                )}
+              </p>
+            ) : (
+              myQueue.map((r) => (
+                <Link
+                  key={r.id}
+                  href={`/requests/${r.id}`}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-line bg-surface-1 px-4 py-3 transition-colors hover:bg-surface-2"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium text-ink-50">
+                      {r.title}
+                    </div>
+                    <div className="text-xs text-ink-500">
+                      {r.reference} · {r.counterparty}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <StatusBadge status={r.status} locale={locale} />
+                    <ArrowRight className="h-4 w-4 text-sela-yellow rtl:rotate-180" />
+                  </div>
+                </Link>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((s) => {

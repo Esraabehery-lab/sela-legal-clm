@@ -60,6 +60,8 @@ import {
   Send,
   ListChecks,
   Users,
+  Check,
+  X,
 } from "lucide-react";
 
 export default function RequestDetailPage({
@@ -169,6 +171,116 @@ export default function RequestDetailPage({
           {/* DF form details */}
           {req.df && <DfDetailsCard df={req.df} locale={locale} />}
 
+          {/* Approval workflow (US-008/009/010) */}
+          {req.approvals.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <ShieldCheck className="h-4 w-4 text-ink-400" />
+                  {t(locale, "Approval Workflow", "مسار الاعتماد")}
+                </CardTitle>
+                <CardDescription>
+                  {t(
+                    locale,
+                    "Head of Business Unit → CSCCO → CFO → Legal",
+                    "رئيس وحدة الأعمال ← CSCCO ← CFO ← القانونية",
+                  )}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {req.approvals.map((a) => (
+                  <div
+                    key={a.stage}
+                    className="rounded-lg border border-line bg-surface-1 p-4"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium text-ink-50">
+                        {label(STAGE_LABELS, a.stage, locale)}
+                      </span>
+                      <DecisionBadge decision={a.decision} locale={locale} />
+                    </div>
+                    {a.reviewer && (
+                      <p className="mt-1 text-xs text-ink-500">
+                        {a.reviewer}
+                        {a.decidedAt
+                          ? ` · ${formatDateTime(a.decidedAt, locale)}`
+                          : ""}
+                      </p>
+                    )}
+                    {a.comment && (
+                      <p className="mt-1 text-xs text-ink-300">“{a.comment}”</p>
+                    )}
+
+                    {a.decision === "PENDING" &&
+                      (!isStageActionable(req.approvals, a.stage) ? (
+                        <p className="mt-2 text-xs text-ink-500">
+                          {t(
+                            locale,
+                            "Waiting for the previous approval.",
+                            "بانتظار اعتماد المرحلة السابقة.",
+                          )}
+                        </p>
+                      ) : canApproveStage(role, a.stage) ? (
+                        <form action={decideApproval} className="mt-3 space-y-2">
+                          <input type="hidden" name="requestId" value={req.id} />
+                          <input type="hidden" name="stage" value={a.stage} />
+                          <Input
+                            name="comment"
+                            placeholder={t(
+                              locale,
+                              "Comment (optional)…",
+                              "تعليق (اختياري)…",
+                            )}
+                            className="h-9"
+                          />
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Button
+                              type="submit"
+                              name="decision"
+                              value="APPROVED"
+                              size="sm"
+                              variant="mint"
+                            >
+                              <Check className="h-4 w-4" />
+                              {t(locale, "Approve", "اعتماد")}
+                            </Button>
+                            <Button
+                              type="submit"
+                              name="decision"
+                              value="REJECTED"
+                              size="sm"
+                              variant="destructive"
+                            >
+                              <X className="h-4 w-4" />
+                              {t(locale, "Reject", "رفض")}
+                            </Button>
+                            <Button
+                              type="submit"
+                              name="decision"
+                              value="CHANGES_REQUESTED"
+                              size="sm"
+                              variant="outline"
+                            >
+                              {t(locale, "Request Changes", "طلب تعديلات")}
+                            </Button>
+                          </div>
+                        </form>
+                      ) : (
+                        <p className="mt-2 text-xs text-ink-500">
+                          {t(
+                            locale,
+                            "Awaiting this approver’s decision.",
+                            "بانتظار قرار هذا المعتمد.",
+                          )}
+                        </p>
+                      ))}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+
           {/* AI generated draft + clauses */}
           {req.draft && (
             <Card>
@@ -255,101 +367,6 @@ export default function RequestDetailPage({
                     </div>
                   </>
                 )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Approval workflow (US-008/009/010) */}
-          {req.approvals.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <ShieldCheck className="h-4 w-4 text-ink-400" />
-                  {t(locale, "Approval Workflow", "مسار الاعتماد")}
-                </CardTitle>
-                <CardDescription>
-                  {t(
-                    locale,
-                    "Procurement → Finance → Legal",
-                    "المشتريات ← المالية ← القانونية",
-                  )}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {req.approvals.map((a) => (
-                  <div
-                    key={a.stage}
-                    className="rounded-lg border border-line bg-surface-1 p-4"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-medium text-ink-50">
-                        {label(STAGE_LABELS, a.stage, locale)}
-                      </span>
-                      <DecisionBadge decision={a.decision} locale={locale} />
-                    </div>
-                    {a.reviewer && (
-                      <p className="mt-1 text-xs text-ink-500">
-                        {a.reviewer}
-                        {a.decidedAt
-                          ? ` · ${formatDateTime(a.decidedAt, locale)}`
-                          : ""}
-                      </p>
-                    )}
-                    {a.comment && (
-                      <p className="mt-1 text-xs text-ink-300">“{a.comment}”</p>
-                    )}
-
-                    {a.decision === "PENDING" &&
-                      (!isStageActionable(req.approvals, a.stage) ? (
-                        <p className="mt-2 text-xs text-ink-500">
-                          {t(
-                            locale,
-                            "Waiting for the previous approval.",
-                            "بانتظار اعتماد المرحلة السابقة.",
-                          )}
-                        </p>
-                      ) : canApproveStage(role, a.stage) ? (
-                        <form
-                          action={decideApproval}
-                          className="mt-3 flex flex-wrap items-center gap-2"
-                        >
-                          <input type="hidden" name="requestId" value={req.id} />
-                          <input type="hidden" name="stage" value={a.stage} />
-                          <Input
-                            name="comment"
-                            placeholder={t(locale, "Comment…", "تعليق…")}
-                            className="h-9 max-w-xs flex-1"
-                          />
-                          <Select
-                            name="decision"
-                            defaultValue="APPROVED"
-                            className="h-9 w-[150px]"
-                          >
-                            <option value="APPROVED">
-                              {t(locale, "Approve", "اعتماد")}
-                            </option>
-                            <option value="CHANGES_REQUESTED">
-                              {t(locale, "Request Changes", "طلب تعديلات")}
-                            </option>
-                            <option value="REJECTED">
-                              {t(locale, "Reject", "رفض")}
-                            </option>
-                          </Select>
-                          <Button type="submit" size="sm">
-                            {t(locale, "Submit", "إرسال")}
-                          </Button>
-                        </form>
-                      ) : (
-                        <p className="mt-2 text-xs text-ink-500">
-                          {t(
-                            locale,
-                            "Awaiting this approver’s decision.",
-                            "بانتظار قرار هذا المعتمد.",
-                          )}
-                        </p>
-                      ))}
-                  </div>
-                ))}
               </CardContent>
             </Card>
           )}
