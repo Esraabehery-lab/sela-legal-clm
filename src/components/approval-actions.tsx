@@ -18,10 +18,12 @@ export function ApprovalActions({
   requestId,
   stage,
   locale,
+  allowArchive = true,
 }: {
   requestId: string;
   stage: ApprovalStage;
   locale: Locale;
+  allowArchive?: boolean;
 }) {
   const [rejecting, setRejecting] = React.useState(false);
   const [comment, setComment] = React.useState("");
@@ -107,17 +109,19 @@ export function ApprovalActions({
           <Undo2 className="h-4 w-4" />
           {t(locale, "Return to edit & resubmit", "إعادة للتعديل وإعادة الإرسال")}
         </Button>
-        <Button
-          type="submit"
-          name="outcome"
-          value="ARCHIVE"
-          size="sm"
-          variant="outline"
-          disabled={!canSubmit}
-        >
-          <Archive className="h-4 w-4" />
-          {t(locale, "Archive", "أرشفة")}
-        </Button>
+        {allowArchive && (
+          <Button
+            type="submit"
+            name="outcome"
+            value="ARCHIVE"
+            size="sm"
+            variant="outline"
+            disabled={!canSubmit}
+          >
+            <Archive className="h-4 w-4" />
+            {t(locale, "Archive", "أرشفة")}
+          </Button>
+        )}
         <Button
           type="button"
           size="sm"

@@ -279,6 +279,7 @@ export default function RequestDetailPage({
                           requestId={req.id}
                           stage={a.stage}
                           locale={locale}
+                          allowArchive={a.stage !== "HEAD_OF_BU"}
                         />
                       ) : (
                         <p className="mt-2 text-xs text-ink-500">
