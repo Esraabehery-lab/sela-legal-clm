@@ -369,7 +369,7 @@ export default function RequestDetailPage({
                   locale={locale}
                 />
 
-                {!focusedReview && (
+                {!focusedReview && role !== "BUSINESS_USER" && (
                   <>
                 <Separator />
 
