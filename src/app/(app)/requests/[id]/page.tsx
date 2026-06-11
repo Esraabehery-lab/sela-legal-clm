@@ -36,11 +36,13 @@ import {
   regenerate,
   submitForApproval,
   confirmContract,
+  submitRevisedContract,
   signContract,
 } from "@/lib/actions";
 import { ApprovalActions } from "@/components/approval-actions";
 import { ApprovalProgress } from "@/components/approval-progress";
 import { DownloadContractPdf } from "@/components/download-contract-pdf";
+import { ContractReviewActions } from "@/components/contract-review-actions";
 import {
   canApproveStage,
   canEditDraft as canEditDraftFn,
@@ -51,6 +53,7 @@ import {
   canRunAi,
   canEditRequest,
   canConfirmContract,
+  canSubmitRevision,
   isStageActionable,
   roleStage,
 } from "@/lib/permissions";
@@ -89,26 +92,28 @@ export default function RequestDetailPage({
   const canReRunAi = canRunAi(role);
   const canEditReq = canEditRequest(role, req.status);
 
-  // Every approver (Head of BU, CSCCO, CFO, Legal) gets a focused review
-  // screen: scope + DF details + approve/reject only. The Legal Reviewer's
-  // approval triggers AI contract generation.
-  const focusedReview = roleStage(role) !== null;
+  // Scope-approval reviewers (Head of BU, CSCCO, CFO, Legal) get a focused
+  // scope-review screen — but only while the request is in that phase.
+  const focusedReview = roleStage(role) !== null && req.status === "IN_APPROVAL";
 
-  // The Legal Reviewer sees the AI-generated contract once they have approved.
-  const legalApproved =
-    req.approvals.find((a) => a.stage === "LEGAL")?.decision === "APPROVED";
-  // The Business User sees the contract only once it's generated (to confirm).
+  // The contract exists once it has been generated (Legal approval onward).
   const contractGenerated =
     req.status === "APPROVED" ||
     req.status === "CONFIRMED" ||
+    req.status === "CONTRACT_REVIEW" ||
+    req.status === "CONTRACT_REVISION" ||
     req.status === "SIGNED" ||
     req.status === "ACTIVE";
-  const businessSeesContract = role === "BUSINESS_USER" && contractGenerated;
+  // Scope-only approvers never see the contract.
+  const scopeOnlyApprover =
+    role === "HEAD_OF_BU" || role === "CSCCO" || role === "CFO";
   const showContract =
-    (!focusedReview && role !== "BUSINESS_USER") ||
-    (role === "LEGAL" && legalApproved) ||
-    businessSeesContract;
+    !!req.draft &&
+    !focusedReview &&
+    !scopeOnlyApprover &&
+    (role !== "BUSINESS_USER" || contractGenerated);
   const canConfirm = canConfirmContract(role, req.status);
+  const canRevise = canSubmitRevision(role, req.status);
 
   // In focused review, show only the reviewer's own approval row (not the
   // whole chain). Everyone else sees the full chain.
@@ -429,6 +434,94 @@ export default function RequestDetailPage({
                     </div>
                   </>
                 )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Contract review (Procurement → Finance → Legal) */}
+          {req.contractReviews.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <ShieldCheck className="h-4 w-4 text-ink-400" />
+                  {t(locale, "Contract Review", "مراجعة العقد")}
+                </CardTitle>
+                <CardDescription>
+                  {t(
+                    locale,
+                    "Procurement → Finance → Legal (each adds a comment)",
+                    "المشتريات ← المالية ← القانونية (يضيف كل منهم ملاحظة)",
+                  )}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {canRevise && (
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/[0.06] p-4">
+                    <p className="text-sm text-ink-200">
+                      {t(
+                        locale,
+                        "Address the review comments below, edit the contract above, then submit the revised contract.",
+                        "عالج ملاحظات المراجعة أدناه، وعدّل العقد بالأعلى، ثم أرسل العقد المُعدّل.",
+                      )}
+                    </p>
+                    <form action={submitRevisedContract.bind(null, req.id)}>
+                      <Button type="submit" size="sm" variant="mint">
+                        <CheckCircle2 className="h-4 w-4" />
+                        {t(locale, "Submit Revised Contract", "إرسال العقد المُعدّل")}
+                      </Button>
+                    </form>
+                  </div>
+                )}
+                {req.contractReviews.map((rv) => (
+                  <div
+                    key={rv.stage}
+                    className="rounded-lg border border-line bg-surface-1 p-4"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium text-ink-50">
+                        {label(STAGE_LABELS, rv.stage, locale)}
+                      </span>
+                      <DecisionBadge decision={rv.decision} locale={locale} />
+                    </div>
+                    {rv.reviewer && (
+                      <p className="mt-1 text-xs text-ink-500">
+                        {rv.reviewer}
+                        {rv.decidedAt
+                          ? ` · ${formatDateTime(rv.decidedAt, locale)}`
+                          : ""}
+                      </p>
+                    )}
+                    {rv.comment && (
+                      <p className="mt-1 text-xs text-ink-300">“{rv.comment}”</p>
+                    )}
+
+                    {rv.decision === "PENDING" &&
+                      (!isStageActionable(req.contractReviews, rv.stage) ? (
+                        <p className="mt-2 text-xs text-ink-500">
+                          {t(
+                            locale,
+                            "Waiting for the previous review.",
+                            "بانتظار المراجعة السابقة.",
+                          )}
+                        </p>
+                      ) : req.status === "CONTRACT_REVIEW" &&
+                        canApproveStage(role, rv.stage) ? (
+                        <ContractReviewActions
+                          requestId={req.id}
+                          stage={rv.stage}
+                          locale={locale}
+                        />
+                      ) : (
+                        <p className="mt-2 text-xs text-ink-500">
+                          {t(
+                            locale,
+                            "Awaiting this reviewer’s comment.",
+                            "بانتظار ملاحظة هذا المراجع.",
+                          )}
+                        </p>
+                      ))}
+                  </div>
+                ))}
               </CardContent>
             </Card>
           )}

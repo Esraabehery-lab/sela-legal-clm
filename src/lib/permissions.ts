@@ -59,8 +59,23 @@ export function canSign(role: Role, status: RequestStatus): boolean {
   );
 }
 
+/** Business user addresses contract-review comments and resubmits. */
+export function canSubmitRevision(role: Role, status: RequestStatus): boolean {
+  return (
+    (role === "BUSINESS_USER" || role === "LEGAL_OPS") &&
+    status === "CONTRACT_REVISION"
+  );
+}
+
 export function canManageObligations(role: Role): boolean {
   return role === "CONTRACT_OWNER" || role === "LEGAL_OPS";
+}
+
+/** The contract-review stage a reviewer role owns (Procurement/Finance/Legal). */
+export function contractReviewStage(role: Role): ApprovalStage | null {
+  if (role === "PROCUREMENT" || role === "FINANCE" || role === "LEGAL")
+    return role;
+  return null;
 }
 
 export function isReadOnly(role: Role): boolean {
@@ -86,8 +101,16 @@ export const RESPONSIBILITIES: Record<Role, { en: string; ar: string }> = {
     ar: "ثالث معتمد — التحقق من الجوانب المالية والاعتماد أو الرفض بعد CSCCO.",
   },
   LEGAL: {
-    en: "Final approver — review legal terms, risks and AI recommendations, then approve or reject.",
-    ar: "المعتمد النهائي — مراجعة الشروط القانونية والمخاطر وتوصيات الذكاء الاصطناعي ثم الاعتماد أو الرفض.",
+    en: "Approve the request scope, then review the generated contract and add comments.",
+    ar: "اعتماد نطاق الطلب، ثم مراجعة العقد المُولّد وإضافة الملاحظات.",
+  },
+  PROCUREMENT: {
+    en: "Review the generated contract and approve with comments (first contract-review stage).",
+    ar: "مراجعة العقد المُولّد واعتماده مع الملاحظات (أول مرحلة مراجعة العقد).",
+  },
+  FINANCE: {
+    en: "Review the generated contract and approve with comments (after Procurement).",
+    ar: "مراجعة العقد المُولّد واعتماده مع الملاحظات (بعد المشتريات).",
   },
   CONTRACT_OWNER: {
     en: "Sign approved contracts and monitor obligations and deliverables.",
@@ -129,10 +152,30 @@ export function roleStage(role: Role): ApprovalStage | null {
   return null;
 }
 
+type StageDecision = { stage: ApprovalStage; decision: string };
 type RequestLike = {
   status: RequestStatus;
-  approvals: { stage: ApprovalStage; decision: string }[];
+  approvals: StageDecision[];
+  contractReviews: StageDecision[];
 };
+
+function phase1Awaits(req: RequestLike, role: Role): boolean {
+  const stage = roleStage(role);
+  return (
+    !!stage &&
+    req.status === "IN_APPROVAL" &&
+    isStageActionable(req.approvals, stage)
+  );
+}
+
+function phase2Awaits(req: RequestLike, role: Role): boolean {
+  const stage = contractReviewStage(role);
+  return (
+    !!stage &&
+    req.status === "CONTRACT_REVIEW" &&
+    isStageActionable(req.contractReviews, stage)
+  );
+}
 
 /** Whether a request is currently waiting on the given role to act. */
 export function awaitsAction(req: RequestLike, role: Role): boolean {
@@ -143,19 +186,24 @@ export function awaitsAction(req: RequestLike, role: Role): boolean {
       req.status === "DRAFT_GENERATED" ||
       req.status === "BU_REVIEW" ||
       req.status === "RETURNED" ||
-      req.status === "APPROVED" // confirm the AI-generated contract
+      req.status === "APPROVED" || // confirm the AI-generated contract
+      req.status === "CONTRACT_REVISION" // address review comments
     );
   if (role === "CONTRACT_OWNER") return req.status === "CONFIRMED";
 
-  const stage = roleStage(role);
-  if (stage)
-    return req.status === "IN_APPROVAL" && isStageActionable(req.approvals, stage);
+  if (phase1Awaits(req, role) || phase2Awaits(req, role)) return true;
 
   if (role === "LEGAL_OPS")
     return (
       (req.status === "IN_APPROVAL" &&
         req.approvals.some((a) => isStageActionable(req.approvals, a.stage))) ||
-      req.status === "APPROVED"
+      (req.status === "CONTRACT_REVIEW" &&
+        req.contractReviews.some((a) =>
+          isStageActionable(req.contractReviews, a.stage),
+        )) ||
+      req.status === "APPROVED" ||
+      req.status === "CONTRACT_REVISION" ||
+      req.status === "CONFIRMED"
     );
   return false;
 }

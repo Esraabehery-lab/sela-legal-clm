@@ -38,6 +38,8 @@ export const STATUS_LABELS: Record<RequestStatus, Pair> = {
   IN_APPROVAL: { en: "Request to Approve", ar: "طلب للاعتماد" },
   APPROVED: { en: "Approved", ar: "معتمد" },
   CONFIRMED: { en: "Confirmed", ar: "مؤكَّد" },
+  CONTRACT_REVIEW: { en: "Contract Review", ar: "مراجعة العقد" },
+  CONTRACT_REVISION: { en: "Contract Revision", ar: "تعديل العقد" },
   REJECTED: { en: "Rejected", ar: "مرفوض" },
   RETURNED: { en: "Returned for Edit", ar: "أُعيد للتعديل" },
   ARCHIVED: { en: "Archived", ar: "مؤرشف" },
@@ -61,6 +63,8 @@ export const STAGE_LABELS: Record<ApprovalStage, Pair> = {
   CSCCO: { en: "CSCCO", ar: "الرئيس التنفيذي للسلسلة والتجارة" },
   CFO: { en: "CFO", ar: "الرئيس المالي" },
   LEGAL: { en: "Legal Reviewer", ar: "المراجع القانوني" },
+  PROCUREMENT: { en: "Procurement Team", ar: "فريق المشتريات" },
+  FINANCE: { en: "Finance Team", ar: "الفريق المالي" },
 };
 
 export const DECISION_LABELS: Record<ApprovalDecision, Pair> = {

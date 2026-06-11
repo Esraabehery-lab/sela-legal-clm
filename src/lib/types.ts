@@ -16,6 +16,8 @@ export type Role =
   | "CSCCO" // approval stage 2
   | "CFO" // approval stage 3
   | "LEGAL" // approval stage 4 (legal reviewer)
+  | "PROCUREMENT" // contract-review stage 1
+  | "FINANCE" // contract-review stage 2
   | "LEGAL_OPS" // oversight / can act across stages
   | "CONTRACT_OWNER" // signature + execution monitoring
   | "AUDITOR"; // read-only history
@@ -29,6 +31,8 @@ export type RequestStatus =
   | "IN_APPROVAL" // US-008/009/010
   | "APPROVED"
   | "CONFIRMED" // business user confirmed the AI-generated contract
+  | "CONTRACT_REVIEW" // contract reviewed by Procurement → Finance → Legal
+  | "CONTRACT_REVISION" // back to business user to address review comments
   | "REJECTED"
   | "RETURNED" // rejected → returned to business user to edit & resubmit
   | "ARCHIVED" // rejected → archived (closed)
@@ -53,8 +57,15 @@ export type Department =
   | "IT"
   | "HR";
 
-// Fixed sequential approval chain: Head of BU → CSCCO → CFO → Legal.
-export type ApprovalStage = "HEAD_OF_BU" | "CSCCO" | "CFO" | "LEGAL";
+// Scope-approval chain: Head of BU → CSCCO → CFO → Legal.
+// Contract-review chain: Procurement → Finance → Legal.
+export type ApprovalStage =
+  | "HEAD_OF_BU"
+  | "CSCCO"
+  | "CFO"
+  | "LEGAL"
+  | "PROCUREMENT"
+  | "FINANCE";
 export type ApprovalDecision =
   | "PENDING"
   | "APPROVED"
@@ -192,6 +203,8 @@ export interface DFRequest {
   draft?: ContractDraft;
   versions: DraftVersion[];
   approvals: Approval[];
+  /** Second-phase contract review: Procurement → Finance → Legal. */
+  contractReviews: Approval[];
   obligations: Obligation[];
   compliance: ComplianceFinding[];
   riskScore?: number; // 0..100 (US-011)

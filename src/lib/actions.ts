@@ -37,6 +37,7 @@ import {
   canCreateRequest,
   canEditRequest,
   canConfirmContract,
+  canSubmitRevision,
   canUploadDocuments,
   canRunAi,
   canEditDraft,
@@ -202,6 +203,7 @@ export async function createRequest(formData: FormData): Promise<void> {
     documents: [],
     versions: [],
     approvals: [],
+    contractReviews: [],
     obligations: [],
     compliance: [],
     audit: [],
@@ -444,17 +446,93 @@ export async function decideApproval(formData: FormData): Promise<void> {
   revalidatePath("/dashboard");
 }
 
-/** Business user confirms the AI-generated contract after full approval. */
+/**
+ * Business user confirms the AI-generated contract, which sends it into the
+ * contract-review phase: Procurement → Finance → Legal.
+ */
 export async function confirmContract(requestId: string): Promise<void> {
   const req = getRequest(requestId);
   if (!req) return;
   ensure(canConfirmContract(getRole(), req.status));
-  req.status = "CONFIRMED";
+  req.contractReviews = (["PROCUREMENT", "FINANCE", "LEGAL"] as const).map(
+    (stage) => ({ stage, decision: "PENDING" as ApprovalDecision }),
+  );
+  req.status = "CONTRACT_REVIEW";
   audit(
     req,
     whoami(),
     "Contract confirmed",
-    "Business user confirmed the AI-generated contract",
+    "Confirmed — routed to Procurement → Finance → Legal for contract review",
+  );
+  revalidatePath(`/requests/${req.id}`);
+  revalidatePath("/dashboard");
+}
+
+const reviewSchema = z.object({
+  requestId: z.string(),
+  stage: z.enum(["PROCUREMENT", "FINANCE", "LEGAL"]),
+  decision: z.enum(["APPROVED", "REJECTED"]),
+  comment: z.string().optional(),
+});
+
+/**
+ * Contract-review decision (Procurement → Finance → Legal). A comment is
+ * mandatory. After Legal reviews, the contract returns to the business user to
+ * address the comments.
+ */
+export async function reviewContract(formData: FormData): Promise<void> {
+  const { requestId, stage, decision, comment } = reviewSchema.parse({
+    requestId: formData.get("requestId"),
+    stage: formData.get("stage"),
+    decision: formData.get("decision"),
+    comment: formData.get("comment") ?? "",
+  });
+  ensure(canApproveStage(getRole(), stage));
+  if (!comment?.trim()) {
+    throw new Error("A comment is required for every contract review.");
+  }
+  const req = getRequest(requestId);
+  if (!req) return;
+  ensure(isStageActionable(req.contractReviews, stage));
+  const rv = req.contractReviews.find((a) => a.stage === stage);
+  if (!rv) return;
+  rv.decision = decision as ApprovalDecision;
+  rv.reviewer = whoami();
+  rv.comment = comment;
+  rv.decidedAt = new Date().toISOString();
+  audit(req, whoami(), "Contract review", `${stage}: ${decision} — ${comment}`);
+
+  const allReviewed = req.contractReviews.every(
+    (a) => a.decision === "APPROVED",
+  );
+  if (decision === "REJECTED" || allReviewed) {
+    // Return to the business user to address the review comments.
+    req.status = "CONTRACT_REVISION";
+    audit(
+      req,
+      "System",
+      "Returned for contract revision",
+      "Business user to address the contract review comments",
+    );
+  }
+  revalidatePath(`/requests/${req.id}`);
+  revalidatePath("/dashboard");
+}
+
+/**
+ * Business user addresses the contract-review comments and finalises the
+ * contract, making it ready for the Contract Owner to sign.
+ */
+export async function submitRevisedContract(requestId: string): Promise<void> {
+  const req = getRequest(requestId);
+  if (!req) return;
+  ensure(canSubmitRevision(getRole(), req.status));
+  req.status = "CONFIRMED";
+  audit(
+    req,
+    whoami(),
+    "Contract revised",
+    "Business user addressed review comments — ready for signature",
   );
   revalidatePath(`/requests/${req.id}`);
   revalidatePath("/dashboard");

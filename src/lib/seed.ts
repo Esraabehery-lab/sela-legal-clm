@@ -53,6 +53,7 @@ function base(
     draft: partial.draft,
     versions: partial.versions ?? [],
     approvals: partial.approvals ?? [],
+    contractReviews: partial.contractReviews ?? [],
     obligations: partial.obligations ?? [],
     compliance: partial.compliance ?? [],
     riskScore: partial.riskScore,

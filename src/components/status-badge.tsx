@@ -24,6 +24,8 @@ const STATUS_VARIANT: Record<RequestStatus, Variant> = {
   IN_APPROVAL: "amber",
   APPROVED: "mint",
   CONFIRMED: "mint",
+  CONTRACT_REVIEW: "amber",
+  CONTRACT_REVISION: "amber",
   REJECTED: "red",
   RETURNED: "amber",
   ARCHIVED: "outline",

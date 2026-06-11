@@ -12,6 +12,8 @@ export const ROLE_LABELS: Record<Role, { en: string; ar: string }> = {
   CSCCO: { en: "CSCCO", ar: "الرئيس التنفيذي للسلسلة والتجارة" },
   CFO: { en: "CFO", ar: "الرئيس المالي" },
   LEGAL: { en: "Legal Reviewer", ar: "مراجع قانوني" },
+  PROCUREMENT: { en: "Procurement Team", ar: "فريق المشتريات" },
+  FINANCE: { en: "Finance Team", ar: "الفريق المالي" },
   LEGAL_OPS: { en: "Legal Operations", ar: "العمليات القانونية" },
   CONTRACT_OWNER: { en: "Contract Owner", ar: "مالك العقد" },
   AUDITOR: { en: "Auditor", ar: "مدقق" },

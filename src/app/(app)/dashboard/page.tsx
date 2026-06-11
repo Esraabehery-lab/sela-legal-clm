@@ -49,6 +49,8 @@ export default function DashboardPage() {
     CSCCO: 0,
     CFO: 0,
     LEGAL: 0,
+    PROCUREMENT: 0,
+    FINANCE: 0,
   };
   requests.forEach((r) =>
     r.approvals.forEach((a) => {
