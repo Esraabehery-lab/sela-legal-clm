@@ -46,9 +46,16 @@ export function canApproveStage(role: Role, stage: ApprovalStage): boolean {
   return role === stage; // PROCUREMENT / FINANCE / LEGAL
 }
 
+/** Business user confirms the AI-generated contract after full approval. */
+export function canConfirmContract(role: Role, status: RequestStatus): boolean {
+  return (
+    (role === "BUSINESS_USER" || role === "LEGAL_OPS") && status === "APPROVED"
+  );
+}
+
 export function canSign(role: Role, status: RequestStatus): boolean {
   return (
-    (role === "CONTRACT_OWNER" || role === "LEGAL_OPS") && status === "APPROVED"
+    (role === "CONTRACT_OWNER" || role === "LEGAL_OPS") && status === "CONFIRMED"
   );
 }
 
@@ -135,9 +142,10 @@ export function awaitsAction(req: RequestLike, role: Role): boolean {
       req.status === "AI_ANALYZED" ||
       req.status === "DRAFT_GENERATED" ||
       req.status === "BU_REVIEW" ||
-      req.status === "RETURNED"
+      req.status === "RETURNED" ||
+      req.status === "APPROVED" // confirm the AI-generated contract
     );
-  if (role === "CONTRACT_OWNER") return req.status === "APPROVED";
+  if (role === "CONTRACT_OWNER") return req.status === "CONFIRMED";
 
   const stage = roleStage(role);
   if (stage)

@@ -28,6 +28,7 @@ export type RequestStatus =
   | "BU_REVIEW" // US-007
   | "IN_APPROVAL" // US-008/009/010
   | "APPROVED"
+  | "CONFIRMED" // business user confirmed the AI-generated contract
   | "REJECTED"
   | "RETURNED" // rejected → returned to business user to edit & resubmit
   | "ARCHIVED" // rejected → archived (closed)

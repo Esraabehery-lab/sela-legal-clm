@@ -37,6 +37,7 @@ export const STATUS_LABELS: Record<RequestStatus, Pair> = {
   BU_REVIEW: { en: "Business Review", ar: "مراجعة الوحدة" },
   IN_APPROVAL: { en: "Request to Approve", ar: "طلب للاعتماد" },
   APPROVED: { en: "Approved", ar: "معتمد" },
+  CONFIRMED: { en: "Confirmed", ar: "مؤكَّد" },
   REJECTED: { en: "Rejected", ar: "مرفوض" },
   RETURNED: { en: "Returned for Edit", ar: "أُعيد للتعديل" },
   ARCHIVED: { en: "Archived", ar: "مؤرشف" },

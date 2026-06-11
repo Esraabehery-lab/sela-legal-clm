@@ -35,6 +35,7 @@ import {
   addDocument,
   regenerate,
   submitForApproval,
+  confirmContract,
   signContract,
 } from "@/lib/actions";
 import { ApprovalActions } from "@/components/approval-actions";
@@ -49,6 +50,7 @@ import {
   canUploadDocuments,
   canRunAi,
   canEditRequest,
+  canConfirmContract,
   isStageActionable,
   roleStage,
 } from "@/lib/permissions";
@@ -65,6 +67,7 @@ import {
   ListChecks,
   Users,
   Pencil,
+  CheckCircle2,
 } from "lucide-react";
 
 export default function RequestDetailPage({
@@ -92,12 +95,20 @@ export default function RequestDetailPage({
   const focusedReview = roleStage(role) !== null;
 
   // The Legal Reviewer sees the AI-generated contract once they have approved.
-  // The Business User does not see the generated contract.
   const legalApproved =
     req.approvals.find((a) => a.stage === "LEGAL")?.decision === "APPROVED";
+  // The Business User sees the contract only once it's generated (to confirm).
+  const contractGenerated =
+    req.status === "APPROVED" ||
+    req.status === "CONFIRMED" ||
+    req.status === "SIGNED" ||
+    req.status === "ACTIVE";
+  const businessSeesContract = role === "BUSINESS_USER" && contractGenerated;
   const showContract =
     (!focusedReview && role !== "BUSINESS_USER") ||
-    (role === "LEGAL" && legalApproved);
+    (role === "LEGAL" && legalApproved) ||
+    businessSeesContract;
+  const canConfirm = canConfirmContract(role, req.status);
 
   // In focused review, show only the reviewer's own approval row (not the
   // whole chain). Everyone else sees the full chain.
@@ -329,6 +340,23 @@ export default function RequestDetailPage({
                 />
               </CardHeader>
               <CardContent className="space-y-5">
+                {canConfirm && (
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-sela-mint/30 bg-sela-mint/[0.06] p-4">
+                    <p className="text-sm text-ink-200">
+                      {t(
+                        locale,
+                        "Please review the AI-generated contract and confirm it.",
+                        "يرجى مراجعة العقد المُولّد بالذكاء الاصطناعي وتأكيده.",
+                      )}
+                    </p>
+                    <form action={confirmContract.bind(null, req.id)}>
+                      <Button type="submit" size="sm" variant="mint">
+                        <CheckCircle2 className="h-4 w-4" />
+                        {t(locale, "Confirm Contract", "تأكيد العقد")}
+                      </Button>
+                    </form>
+                  </div>
+                )}
                 <DraftEditor
                   requestId={req.id}
                   body={locale === "ar" ? req.draft.bodyAr : req.draft.bodyEn}

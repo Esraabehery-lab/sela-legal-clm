@@ -36,6 +36,7 @@ import { getRole, getLocale } from "./prefs";
 import {
   canCreateRequest,
   canEditRequest,
+  canConfirmContract,
   canUploadDocuments,
   canRunAi,
   canEditDraft,
@@ -439,6 +440,22 @@ export async function decideApproval(formData: FormData): Promise<void> {
       );
     }
   }
+  revalidatePath(`/requests/${req.id}`);
+  revalidatePath("/dashboard");
+}
+
+/** Business user confirms the AI-generated contract after full approval. */
+export async function confirmContract(requestId: string): Promise<void> {
+  const req = getRequest(requestId);
+  if (!req) return;
+  ensure(canConfirmContract(getRole(), req.status));
+  req.status = "CONFIRMED";
+  audit(
+    req,
+    whoami(),
+    "Contract confirmed",
+    "Business user confirmed the AI-generated contract",
+  );
   revalidatePath(`/requests/${req.id}`);
   revalidatePath("/dashboard");
 }

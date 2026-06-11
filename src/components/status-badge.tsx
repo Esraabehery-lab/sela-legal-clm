@@ -23,6 +23,7 @@ const STATUS_VARIANT: Record<RequestStatus, Variant> = {
   BU_REVIEW: "yellow",
   IN_APPROVAL: "amber",
   APPROVED: "mint",
+  CONFIRMED: "mint",
   REJECTED: "red",
   RETURNED: "amber",
   ARCHIVED: "outline",
