@@ -47,6 +47,7 @@ import {
   canUploadDocuments,
   canRunAi,
   isStageActionable,
+  roleStage,
 } from "@/lib/permissions";
 import {
   ArrowLeft,
@@ -86,6 +87,14 @@ export default function RequestDetailPage({
   // scope + DF details + approve/reject only — no AI contract / analysis.
   const focusedReview =
     role === "HEAD_OF_BU" || role === "CSCCO" || role === "CFO";
+
+  // In focused review, show only the reviewer's own approval row (not the
+  // whole chain). Everyone else sees the full chain.
+  const myStage = roleStage(role);
+  const visibleApprovals =
+    focusedReview && myStage
+      ? req.approvals.filter((a) => a.stage === myStage)
+      : req.approvals;
 
   return (
     <>
@@ -189,23 +198,25 @@ export default function RequestDetailPage({
           {req.df && <DfDetailsCard df={req.df} locale={locale} />}
 
           {/* Approval workflow (US-008/009/010) */}
-          {req.approvals.length > 0 && (
+          {visibleApprovals.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
                   <ShieldCheck className="h-4 w-4 text-ink-400" />
                   {t(locale, "Approval Workflow", "مسار الاعتماد")}
                 </CardTitle>
-                <CardDescription>
-                  {t(
-                    locale,
-                    "Head of Business Unit → CSCCO → CFO → Legal",
-                    "رئيس وحدة الأعمال ← CSCCO ← CFO ← القانونية",
-                  )}
-                </CardDescription>
+                {!focusedReview && (
+                  <CardDescription>
+                    {t(
+                      locale,
+                      "Head of Business Unit → CSCCO → CFO → Legal",
+                      "رئيس وحدة الأعمال ← CSCCO ← CFO ← القانونية",
+                    )}
+                  </CardDescription>
+                )}
               </CardHeader>
               <CardContent className="space-y-3">
-                {req.approvals.map((a) => (
+                {visibleApprovals.map((a) => (
                   <div
                     key={a.stage}
                     className="rounded-lg border border-line bg-surface-1 p-4"
