@@ -323,19 +323,26 @@ export async function submitForApproval(requestId: string): Promise<void> {
 const decideSchema = z.object({
   requestId: z.string(),
   stage: z.enum(["HEAD_OF_BU", "CSCCO", "CFO", "LEGAL"]),
-  decision: z.enum(["APPROVED", "REJECTED", "CHANGES_REQUESTED"]),
+  decision: z.enum(["APPROVED", "REJECTED"]),
   comment: z.string().optional(),
+  // On reject, the reviewer chooses what happens next.
+  outcome: z.enum(["RETURN", "ARCHIVE"]).optional(),
 });
 
 /** US-008/009/010: record an approval decision for a stage (sequential). */
 export async function decideApproval(formData: FormData): Promise<void> {
-  const { requestId, stage, decision, comment } = decideSchema.parse({
+  const { requestId, stage, decision, comment, outcome } = decideSchema.parse({
     requestId: formData.get("requestId"),
     stage: formData.get("stage"),
     decision: formData.get("decision"),
     comment: formData.get("comment") ?? "",
+    outcome: formData.get("outcome") ?? undefined,
   });
   ensure(canApproveStage(getRole(), stage));
+  // A rejection must include a reason.
+  if (decision === "REJECTED" && !comment?.trim()) {
+    throw new Error("A comment is required when rejecting a request.");
+  }
   const req = getRequest(requestId);
   if (!req) return;
   // Enforce the sequential chain — earlier stages must be approved first.
@@ -349,12 +356,25 @@ export async function decideApproval(formData: FormData): Promise<void> {
   audit(req, whoami(), "Approval decision", `${stage}: ${decision}`);
 
   if (decision === "REJECTED") {
-    req.status = "REJECTED";
+    if (outcome === "ARCHIVE") {
+      req.status = "ARCHIVED";
+      audit(req, whoami(), "Request archived", comment || "Archived after rejection");
+    } else {
+      // Default: return to the business user to edit and resubmit.
+      req.status = "RETURNED";
+      audit(
+        req,
+        whoami(),
+        "Returned to business user",
+        comment || "Returned for edit & resubmit",
+      );
+    }
   } else if (req.approvals.every((a) => a.decision === "APPROVED")) {
     req.status = "APPROVED";
     audit(req, "System", "Fully approved", "All approval stages cleared");
   }
   revalidatePath(`/requests/${req.id}`);
+  revalidatePath("/dashboard");
 }
 
 /** US-012: mark the contract signed + executed, then extract obligations. */

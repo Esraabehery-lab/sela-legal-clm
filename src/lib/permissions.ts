@@ -23,7 +23,9 @@ export function canEditDraft(role: Role): boolean {
 export function canSubmitForApproval(role: Role, status: RequestStatus): boolean {
   return (
     (role === "BUSINESS_USER" || role === "LEGAL_OPS") &&
-    (status === "DRAFT_GENERATED" || status === "BU_REVIEW")
+    (status === "DRAFT_GENERATED" ||
+      status === "BU_REVIEW" ||
+      status === "RETURNED")
   );
 }
 
@@ -118,7 +120,11 @@ type RequestLike = {
 export function awaitsAction(req: RequestLike, role: Role): boolean {
   if (role === "AUDITOR") return false;
   if (role === "BUSINESS_USER")
-    return req.status === "DRAFT_GENERATED" || req.status === "BU_REVIEW";
+    return (
+      req.status === "DRAFT_GENERATED" ||
+      req.status === "BU_REVIEW" ||
+      req.status === "RETURNED"
+    );
   if (role === "CONTRACT_OWNER") return req.status === "APPROVED";
 
   const stage = roleStage(role);

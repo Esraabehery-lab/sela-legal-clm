@@ -29,6 +29,8 @@ export type RequestStatus =
   | "IN_APPROVAL" // US-008/009/010
   | "APPROVED"
   | "REJECTED"
+  | "RETURNED" // rejected → returned to business user to edit & resubmit
+  | "ARCHIVED" // rejected → archived (closed)
   | "SIGNED" // US-012
   | "ACTIVE"; // US-016 (obligations being monitored)
 

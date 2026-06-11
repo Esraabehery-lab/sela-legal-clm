@@ -35,9 +35,9 @@ import {
   addDocument,
   regenerate,
   submitForApproval,
-  decideApproval,
   signContract,
 } from "@/lib/actions";
+import { ApprovalActions } from "@/components/approval-actions";
 import {
   canApproveStage,
   canEditDraft as canEditDraftFn,
@@ -61,8 +61,6 @@ import {
   Send,
   ListChecks,
   Users,
-  Check,
-  X,
 } from "lucide-react";
 
 export default function RequestDetailPage({
@@ -249,50 +247,11 @@ export default function RequestDetailPage({
                           )}
                         </p>
                       ) : canApproveStage(role, a.stage) ? (
-                        <form action={decideApproval} className="mt-3 space-y-2">
-                          <input type="hidden" name="requestId" value={req.id} />
-                          <input type="hidden" name="stage" value={a.stage} />
-                          <Input
-                            name="comment"
-                            placeholder={t(
-                              locale,
-                              "Comment (optional)…",
-                              "تعليق (اختياري)…",
-                            )}
-                            className="h-9"
-                          />
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Button
-                              type="submit"
-                              name="decision"
-                              value="APPROVED"
-                              size="sm"
-                              variant="mint"
-                            >
-                              <Check className="h-4 w-4" />
-                              {t(locale, "Approve", "اعتماد")}
-                            </Button>
-                            <Button
-                              type="submit"
-                              name="decision"
-                              value="REJECTED"
-                              size="sm"
-                              variant="destructive"
-                            >
-                              <X className="h-4 w-4" />
-                              {t(locale, "Reject", "رفض")}
-                            </Button>
-                            <Button
-                              type="submit"
-                              name="decision"
-                              value="CHANGES_REQUESTED"
-                              size="sm"
-                              variant="outline"
-                            >
-                              {t(locale, "Request Changes", "طلب تعديلات")}
-                            </Button>
-                          </div>
-                        </form>
+                        <ApprovalActions
+                          requestId={req.id}
+                          stage={a.stage}
+                          locale={locale}
+                        />
                       ) : (
                         <p className="mt-2 text-xs text-ink-500">
                           {t(
