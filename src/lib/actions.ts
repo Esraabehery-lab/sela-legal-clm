@@ -220,19 +220,6 @@ export async function createRequest(formData: FormData): Promise<void> {
   req.riskScore = comp.riskScore;
   audit(req, "AI Engine", "Compliance validated", `Risk score ${comp.riskScore}/100`);
 
-  // Route straight into the multi-level approval workflow (US-008..010).
-  req.approvals = req.classification.routing.map((stage) => ({
-    stage,
-    decision: "PENDING" as ApprovalDecision,
-  }));
-  req.status = "IN_APPROVAL";
-  audit(
-    req,
-    parsed.requesterName,
-    "Submitted for approval",
-    `Routed ${req.classification.routing.join(" → ")} → Signature`,
-  );
-
   revalidatePath("/requests");
   redirect(`/requests/${req.id}`);
 }
