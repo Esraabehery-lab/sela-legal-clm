@@ -16,8 +16,17 @@ export function canRunAi(role: Role): boolean {
   return role === "BUSINESS_USER" || role === "LEGAL_OPS";
 }
 
-export function canEditDraft(role: Role): boolean {
-  return role === "BUSINESS_USER" || role === "LEGAL_OPS";
+export function canEditDraft(role: Role, status?: RequestStatus): boolean {
+  if (role !== "BUSINESS_USER" && role !== "LEGAL_OPS") return false;
+  if (!status) return true;
+  // The business user can edit the contract while it's in draft/review phases.
+  return (
+    status === "DRAFT_GENERATED" ||
+    status === "BU_REVIEW" ||
+    status === "APPROVED" ||
+    status === "CONTRACT_REVIEW" ||
+    status === "CONTRACT_REVISION"
+  );
 }
 
 export function canEditRequest(role: Role, status: RequestStatus): boolean {
@@ -192,6 +201,7 @@ export function awaitsAction(req: RequestLike, role: Role): boolean {
       req.status === "BU_REVIEW" ||
       req.status === "RETURNED" ||
       req.status === "APPROVED" || // confirm the AI-generated contract
+      req.status === "CONTRACT_REVIEW" || // contract under review — can edit
       req.status === "CONTRACT_REVISION" // address review comments
     );
   if (role === "CONTRACT_OWNER") return req.status === "CONFIRMED";

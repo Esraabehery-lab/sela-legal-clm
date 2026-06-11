@@ -86,7 +86,7 @@ export default function RequestDetailPage({
   if (!req) notFound();
 
   const cls = req.classification;
-  const canEditDraft = canEditDraftFn(role);
+  const canEditDraft = canEditDraftFn(role, req.status);
   const canSubmit = canSubmitForApproval(role, req.status);
   const canSign = canSignFn(role, req.status);
   const canManageObligations = canManageObligationsFn(role);

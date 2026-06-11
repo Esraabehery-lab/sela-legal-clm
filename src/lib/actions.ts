@@ -338,9 +338,9 @@ export async function saveDraft(formData: FormData): Promise<void> {
     bodyEn: formData.get("bodyEn"),
     note: formData.get("note") ?? "",
   });
-  ensure(canEditDraft(getRole()));
   const req = getRequest(requestId);
   if (!req || !req.draft) return;
+  ensure(canEditDraft(getRole(), req.status));
   // snapshot current version before overwriting
   req.versions.unshift({
     version: req.draft.version,
