@@ -15,8 +15,14 @@ import { toast } from "sonner";
  * Scope of Work (SoW) template into the textarea, ready for the requester to
  * complete in place.
  */
-export function ScopeOfWorkField({ locale }: { locale: Locale }) {
-  const [value, setValue] = React.useState("");
+export function ScopeOfWorkField({
+  locale,
+  initial = "",
+}: {
+  locale: Locale;
+  initial?: string;
+}) {
+  const [value, setValue] = React.useState(initial);
 
   function fill() {
     setValue(SCOPE_OF_WORK_TEMPLATE);

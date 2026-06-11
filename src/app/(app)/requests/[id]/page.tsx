@@ -48,6 +48,7 @@ import {
   canManageObligations as canManageObligationsFn,
   canUploadDocuments,
   canRunAi,
+  canEditRequest,
   isStageActionable,
   roleStage,
 } from "@/lib/permissions";
@@ -63,6 +64,7 @@ import {
   Send,
   ListChecks,
   Users,
+  Pencil,
 } from "lucide-react";
 
 export default function RequestDetailPage({
@@ -82,6 +84,7 @@ export default function RequestDetailPage({
   const canManageObligations = canManageObligationsFn(role);
   const canUpload = canUploadDocuments(role);
   const canReRunAi = canRunAi(role);
+  const canEditReq = canEditRequest(role, req.status);
 
   // Every approver (Head of BU, CSCCO, CFO, Legal) gets a focused review
   // screen: scope + DF details + approve/reject only. The Legal Reviewer's
@@ -133,6 +136,14 @@ export default function RequestDetailPage({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {canEditReq && (
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/requests/${req.id}/edit`}>
+                <Pencil className="h-4 w-4" />
+                {t(locale, "Edit Request", "تعديل الطلب")}
+              </Link>
+            </Button>
+          )}
           {canReRunAi && (
             <form action={regenerate.bind(null, req.id)}>
               <Button variant="outline" size="sm" type="submit">

@@ -20,6 +20,16 @@ export function canEditDraft(role: Role): boolean {
   return role === "BUSINESS_USER" || role === "LEGAL_OPS";
 }
 
+export function canEditRequest(role: Role, status: RequestStatus): boolean {
+  return (
+    (role === "BUSINESS_USER" || role === "LEGAL_OPS") &&
+    (status === "AI_ANALYZED" ||
+      status === "DRAFT_GENERATED" ||
+      status === "BU_REVIEW" ||
+      status === "RETURNED")
+  );
+}
+
 export function canSubmitForApproval(role: Role, status: RequestStatus): boolean {
   return (
     (role === "BUSINESS_USER" || role === "LEGAL_OPS") &&

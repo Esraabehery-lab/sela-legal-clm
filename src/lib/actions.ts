@@ -35,6 +35,7 @@ import { LOCALE_COOKIE, ROLE_COOKIE, actorName } from "./roles";
 import { getRole, getLocale } from "./prefs";
 import {
   canCreateRequest,
+  canEditRequest,
   canUploadDocuments,
   canRunAi,
   canEditDraft,
@@ -214,6 +215,65 @@ export async function createRequest(formData: FormData): Promise<void> {
   audit(req, "AI Engine", "Request classified", req.classification.summary);
 
   revalidatePath("/requests");
+  redirect(`/requests/${req.id}`);
+}
+
+/**
+ * Edit a returned request and resubmit it. The Business User updates the DF
+ * form; classification re-runs and the approval chain restarts.
+ */
+export async function updateRequest(formData: FormData): Promise<void> {
+  const requestId = String(formData.get("requestId") ?? "");
+  const req = getRequest(requestId);
+  if (!req) return;
+  ensure(canEditRequest(getRole(), req.status));
+
+  const parsed = createSchema.parse({
+    title: formData.get("title"),
+    description: formData.get("description"),
+    department: formData.get("department"),
+    counterparty: formData.get("counterparty"),
+    requesterName: formData.get("requesterName"),
+    estimatedValue: formData.get("estimatedValue") ?? undefined,
+    currency: formData.get("currency") ?? "SAR",
+    requestedLanguage: (formData.get("requestedLanguage") as Locale) ?? "en",
+  });
+  const df = parseDfDetails(formData);
+  if ((df.requiredDocs?.length ?? 0) < REQUIRED_DOCS.length) {
+    throw new Error(
+      "All required documents must be attached before resubmitting.",
+    );
+  }
+
+  req.title = parsed.title;
+  req.description = parsed.description;
+  req.department = parsed.department as Department;
+  req.requesterName = parsed.requesterName;
+  req.requestedLanguage = parsed.requestedLanguage;
+  req.counterparty = parsed.counterparty;
+  req.currency = parsed.currency || "SAR";
+  req.df = Object.keys(df).length ? df : undefined;
+  const value = df.grandTotal ?? df.totalValueExVat;
+  if (typeof value === "number" && Number.isFinite(value))
+    req.estimatedValue = value;
+  audit(req, whoami(), "Request edited", "Business user updated the DF form");
+
+  // Re-classify and restart the approval chain.
+  req.classification = classify(req);
+  req.approvals = req.classification.routing.map((stage) => ({
+    stage,
+    decision: "PENDING" as ApprovalDecision,
+  }));
+  req.status = "IN_APPROVAL";
+  audit(
+    req,
+    whoami(),
+    "Resubmitted for approval",
+    `Routed ${req.classification.routing.join(" → ")} → Signature`,
+  );
+
+  revalidatePath("/requests");
+  revalidatePath("/dashboard");
   redirect(`/requests/${req.id}`);
 }
 
