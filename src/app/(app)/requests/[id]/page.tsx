@@ -82,10 +82,10 @@ export default function RequestDetailPage({
   const canUpload = canUploadDocuments(role);
   const canReRunAi = canRunAi(role);
 
-  // Business approvers (Head of BU, CSCCO, CFO) get a focused review screen:
-  // scope + DF details + approve/reject only — no AI contract / analysis.
-  const focusedReview =
-    role === "HEAD_OF_BU" || role === "CSCCO" || role === "CFO";
+  // Every approver (Head of BU, CSCCO, CFO, Legal) gets a focused review
+  // screen: scope + DF details + approve/reject only. The Legal Reviewer's
+  // approval triggers AI contract generation.
+  const focusedReview = roleStage(role) !== null;
 
   // In focused review, show only the reviewer's own approval row (not the
   // whole chain). Everyone else sees the full chain.

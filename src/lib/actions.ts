@@ -207,19 +207,11 @@ export async function createRequest(formData: FormData): Promise<void> {
   addRequest(req);
   audit(req, parsed.requesterName, "Request created", `${reference} submitted`);
 
-  // AI pipeline (US-003 → US-005 → US-011)
+  // AI classification only (for routing). The contract itself is generated
+  // after the Legal Reviewer (final stage) approves — not at intake.
   req.classification = classify(req);
   req.status = "AI_ANALYZED";
   audit(req, "AI Engine", "Request classified", req.classification.summary);
-
-  req.draft = generateContract(req);
-  req.status = "DRAFT_GENERATED";
-  audit(req, "AI Engine", "Draft generated", "Contract template generated from request");
-
-  const comp = runCompliance(req);
-  req.compliance = comp.findings;
-  req.riskScore = comp.riskScore;
-  audit(req, "AI Engine", "Compliance validated", `Risk score ${comp.riskScore}/100`);
 
   revalidatePath("/requests");
   redirect(`/requests/${req.id}`);
@@ -372,6 +364,20 @@ export async function decideApproval(formData: FormData): Promise<void> {
   } else if (req.approvals.every((a) => a.decision === "APPROVED")) {
     req.status = "APPROVED";
     audit(req, "System", "Fully approved", "All approval stages cleared");
+    // Legal Reviewer is the final stage — their approval triggers AI
+    // contract generation (US-005) + a compliance pass (US-011).
+    if (!req.draft) {
+      req.draft = generateContract(req);
+      const comp = runCompliance(req);
+      req.compliance = comp.findings;
+      req.riskScore = comp.riskScore;
+      audit(
+        req,
+        "AI Engine",
+        "Contract generated",
+        `AI generated the contract after Legal approval · risk ${comp.riskScore}/100`,
+      );
+    }
   }
   revalidatePath(`/requests/${req.id}`);
   revalidatePath("/dashboard");

@@ -23,7 +23,8 @@ export function canEditDraft(role: Role): boolean {
 export function canSubmitForApproval(role: Role, status: RequestStatus): boolean {
   return (
     (role === "BUSINESS_USER" || role === "LEGAL_OPS") &&
-    (status === "DRAFT_GENERATED" ||
+    (status === "AI_ANALYZED" ||
+      status === "DRAFT_GENERATED" ||
       status === "BU_REVIEW" ||
       status === "RETURNED")
   );
@@ -121,6 +122,7 @@ export function awaitsAction(req: RequestLike, role: Role): boolean {
   if (role === "AUDITOR") return false;
   if (role === "BUSINESS_USER")
     return (
+      req.status === "AI_ANALYZED" ||
       req.status === "DRAFT_GENERATED" ||
       req.status === "BU_REVIEW" ||
       req.status === "RETURNED"
