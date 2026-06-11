@@ -16,6 +16,7 @@ import type {
   ApprovalDecision,
   ObligationStatus,
 } from "./types";
+import type { DfDetails } from "./df";
 import {
   addRequest,
   audit,
@@ -53,6 +54,69 @@ function ensure(allowed: boolean): void {
       "Not permitted: your current role cannot perform this action.",
     );
   }
+}
+
+/** Read a trimmed string field from a form, or undefined when blank. */
+function str(fd: FormData, key: string): string | undefined {
+  const v = fd.get(key);
+  if (typeof v !== "string") return undefined;
+  const t = v.trim();
+  return t.length ? t : undefined;
+}
+
+/** Read a numeric field from a form, or undefined when blank/invalid. */
+function num(fd: FormData, key: string): number | undefined {
+  const v = str(fd, key);
+  if (v === undefined) return undefined;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+/** Build the structured DF intake object from the submitted form. */
+function parseDfDetails(fd: FormData): DfDetails {
+  const docs = fd.getAll("counterpartyDocs").filter((d): d is string => typeof d === "string");
+  const df: DfDetails = {
+    documentType: str(fd, "documentType"),
+    businessUnit: str(fd, "businessUnit"),
+    binding: str(fd, "binding"),
+    financialType: str(fd, "financialType"),
+    contractNature: str(fd, "contractNature"),
+    projectName: str(fd, "projectName"),
+    location: str(fd, "location"),
+    commercialBrand: str(fd, "commercialBrand"),
+    country: str(fd, "country"),
+    budgetCode: str(fd, "budgetCode"),
+    prNumber: str(fd, "prNumber"),
+    prStatus: str(fd, "prStatus"),
+    legalName: str(fd, "legalName"),
+    address: str(fd, "address"),
+    authorizedSignatory: str(fd, "authorizedSignatory"),
+    signatoryTitle: str(fd, "signatoryTitle"),
+    projectManager: str(fd, "projectManager"),
+    projectManagerEmail: str(fd, "projectManagerEmail"),
+    projectManagerPhone: str(fd, "projectManagerPhone"),
+    counterpartyDocs: docs.length ? docs : undefined,
+    durationYears: num(fd, "durationYears"),
+    durationMonths: num(fd, "durationMonths"),
+    durationDays: num(fd, "durationDays"),
+    startDate: str(fd, "startDate"),
+    endDate: str(fd, "endDate"),
+    totalValueExVat: num(fd, "totalValueExVat"),
+    vatAmount: num(fd, "vatAmount"),
+    grandTotal: num(fd, "grandTotal"),
+    paymentTerms: str(fd, "paymentTerms"),
+    paidBy: str(fd, "paidBy"),
+    automaticRenewal: fd.get("automaticRenewal") === "on",
+    terminationNotice: str(fd, "terminationNotice"),
+  };
+  // drop undefined keys so an empty form stores nothing
+  (Object.keys(df) as (keyof DfDetails)[]).forEach((k) => {
+    if (df[k] === undefined) delete df[k];
+  });
+  // automaticRenewal=false is noise when nothing else set
+  if (df.automaticRenewal === false && Object.keys(df).length === 1)
+    delete df.automaticRenewal;
+  return df;
 }
 
 export async function setLocale(locale: Locale): Promise<void> {
@@ -94,9 +158,16 @@ export async function createRequest(formData: FormData): Promise<void> {
     requestedLanguage: (formData.get("requestedLanguage") as Locale) ?? "en",
   });
 
+  // Structured DF (DEF 2026) intake — all optional.
+  const df = parseDfDetails(formData);
+
   const now = new Date().toISOString();
   const reference = nextReference();
-  const value = parsed.estimatedValue ? Number(parsed.estimatedValue) : undefined;
+  const manualValue = parsed.estimatedValue
+    ? Number(parsed.estimatedValue)
+    : undefined;
+  // Prefer the DF grand total / ex-VAT total when provided.
+  const value = df.grandTotal ?? df.totalValueExVat ?? manualValue;
 
   const req: DFRequest = {
     id: `req_${Date.now().toString(36)}`,
@@ -107,8 +178,9 @@ export async function createRequest(formData: FormData): Promise<void> {
     requesterName: parsed.requesterName,
     requestedLanguage: parsed.requestedLanguage,
     counterparty: parsed.counterparty,
-    estimatedValue: Number.isFinite(value) ? value : undefined,
+    estimatedValue: typeof value === "number" && Number.isFinite(value) ? value : undefined,
     currency: parsed.currency || "SAR",
+    df: Object.keys(df).length ? df : undefined,
     status: "SUBMITTED",
     createdAt: now,
     updatedAt: now,

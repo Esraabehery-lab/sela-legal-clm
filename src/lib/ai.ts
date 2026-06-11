@@ -50,11 +50,35 @@ function pickCategory(haystack: string): { category: ContractCategory; hits: num
   return { category, hits };
 }
 
+// Maps the DF "Contract Nature" field onto an internal contract category.
+const NATURE_TO_CATEGORY: Record<string, ContractCategory> = {
+  "General Services": "SERVICE_AGREEMENT",
+  Activation: "SERVICE_AGREEMENT",
+  Operation: "SERVICE_AGREEMENT",
+  Production: "SERVICE_AGREEMENT",
+  Experience: "SERVICE_AGREEMENT",
+  Sponsoring: "SERVICE_AGREEMENT",
+  Construction: "SERVICE_AGREEMENT",
+  Talents: "SERVICE_AGREEMENT",
+  Supply: "SUPPLY",
+  Purchase: "SUPPLY",
+  Consultancy: "CONSULTING",
+  "Lease HOT": "LEASE",
+  "St. Partnership": "PARTNERSHIP",
+  "JV & Investments": "PARTNERSHIP",
+};
+
 /** Classify a DF request and decide routing (US-003 / US-004, BR-01/02). */
 export function classify(req: DFRequest): AiClassification {
   const haystack = `${req.title} ${req.description}`.toLowerCase();
 
-  const { category: best, hits: bestHits } = pickCategory(haystack);
+  const keyword = pickCategory(haystack);
+  // A declared DF "Contract Nature" overrides keyword guessing with high confidence.
+  const declared = req.df?.contractNature
+    ? NATURE_TO_CATEGORY[req.df.contractNature]
+    : undefined;
+  const best: ContractCategory = declared ?? keyword.category;
+  const bestHits = declared ? Math.max(keyword.hits, 2) : keyword.hits;
 
   const confidence = Math.min(0.55 + bestHits * 0.15, 0.97);
   const value = req.estimatedValue ?? 0;

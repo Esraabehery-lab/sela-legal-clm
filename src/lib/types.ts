@@ -5,6 +5,8 @@
 // approval → signature → obligation extraction → monitoring.
 // ============================================================
 
+import type { DfDetails } from "./df";
+
 export type Locale = "en" | "ar";
 
 /** Personas from the User Stories doc (Epics 1–14). */
@@ -175,6 +177,8 @@ export interface DFRequest {
   counterparty: string;
   estimatedValue?: number;
   currency: string;
+  /** Structured DF (DEF 2026) intake fields. */
+  df?: DfDetails;
   status: RequestStatus;
   createdAt: string;
   updatedAt: string;

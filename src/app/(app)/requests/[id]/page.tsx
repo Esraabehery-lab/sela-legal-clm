@@ -20,6 +20,7 @@ import {
 } from "@/components/status-badge";
 import { DraftEditor } from "@/components/draft-editor";
 import { ObligationRow } from "@/components/obligation-row";
+import { DfDetailsCard } from "@/components/df-details-card";
 import { getRequest } from "@/lib/store";
 import { getLocale, getRole } from "@/lib/prefs";
 import {
@@ -163,6 +164,9 @@ export default function RequestDetailPage({
               </div>
             </CardContent>
           </Card>
+
+          {/* DF form details */}
+          {req.df && <DfDetailsCard df={req.df} locale={locale} />}
 
           {/* AI generated draft + clauses */}
           {req.draft && (
