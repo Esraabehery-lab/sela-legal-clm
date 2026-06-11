@@ -78,6 +78,7 @@ export function DfDetailsCard({
     df.projectManager,
     df.projectManagerEmail,
     df.projectManagerPhone,
+    df.requiredDocs?.length,
     df.counterpartyDocs?.length,
   );
   const commercials = hasAny(
@@ -147,6 +148,20 @@ export function DfDetailsCard({
               <Row lbl={DF_LABELS.projectManager} value={df.projectManager} locale={locale} />
               <Row lbl={DF_LABELS.projectManagerEmail} value={df.projectManagerEmail} locale={locale} />
               <Row lbl={DF_LABELS.projectManagerPhone} value={df.projectManagerPhone} locale={locale} />
+              {df.requiredDocs && df.requiredDocs.length > 0 && (
+                <div className="pt-1">
+                  <div className="mb-1.5 text-xs text-ink-500">
+                    {t(locale, DF_LABELS.requiredDocs.en, DF_LABELS.requiredDocs.ar)}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {df.requiredDocs.map((d) => (
+                      <Badge key={d} variant="mint">
+                        {d}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
               {df.counterpartyDocs && df.counterpartyDocs.length > 0 && (
                 <div className="pt-1">
                   <div className="mb-1.5 text-xs text-ink-500">

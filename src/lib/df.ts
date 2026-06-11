@@ -72,11 +72,34 @@ export const TERMINATION_NOTICES = [
   "90 Days",
 ] as const;
 
+/** Mandatory documents that must accompany every DF before submission. */
+export const REQUIRED_DOCS = [
+  { key: "cr", en: "CR", ar: "السجل التجاري" },
+  {
+    key: "bank",
+    en: "Bank Account Information",
+    ar: "معلومات الحساب البنكي",
+  },
+  {
+    key: "authLetter",
+    en: "Signatory Authorization Letter",
+    ar: "خطاب تفويض التوقيع",
+  },
+  {
+    key: "offers",
+    en: "Counterparty Offers (Technical + Financial)",
+    ar: "عروض الطرف المقابل (الفني + المالي)",
+  },
+  {
+    key: "scope",
+    en: "Filled-out Scope of Work",
+    ar: "نطاق العمل المعبأ",
+  },
+] as const;
+
+/** Additional (optional) documents that may be received. */
 export const COUNTERPARTY_DOCS = [
-  "CR",
   "VAT",
-  "Bank Account Letter",
-  "Authorization Letter",
   "Vendor Registration",
   "KYC",
   "Article of Association / Bylaw",
@@ -114,6 +137,7 @@ export interface DfDetails {
   projectManager?: string;
   projectManagerEmail?: string;
   projectManagerPhone?: string;
+  requiredDocs?: string[];
   counterpartyDocs?: string[];
 
   // Duration & commercials
@@ -158,7 +182,8 @@ export const DF_LABELS = {
   projectManager: { en: "Project Manager", ar: "مدير المشروع" },
   projectManagerEmail: { en: "Manager Email", ar: "بريد المدير" },
   projectManagerPhone: { en: "Manager Phone", ar: "هاتف المدير" },
-  counterpartyDocs: { en: "Documents Received", ar: "المستندات المستلمة" },
+  requiredDocs: { en: "Required Documents", ar: "المستندات المطلوبة" },
+  counterpartyDocs: { en: "Additional Documents", ar: "مستندات إضافية" },
   duration: { en: "Duration", ar: "المدة" },
   years: { en: "Years", ar: "سنوات" },
   months: { en: "Months", ar: "أشهر" },

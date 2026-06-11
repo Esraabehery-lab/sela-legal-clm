@@ -23,6 +23,7 @@ import {
   PAID_BY,
   TERMINATION_NOTICES,
   COUNTERPARTY_DOCS,
+  REQUIRED_DOCS,
   DF_LABELS,
 } from "@/lib/df";
 import { Sparkles, Lock } from "lucide-react";
@@ -271,6 +272,41 @@ export default function NewRequestPage() {
                 </div>
               </div>
             </Section>
+
+            {/* ---- Required documents (mandatory) ---- */}
+            <div className="space-y-4">
+              <div>
+                <Separator className="mb-4" />
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-200">
+                  {t(locale, DF_LABELS.requiredDocs.en, DF_LABELS.requiredDocs.ar)}
+                  <span className="ms-1 text-red-400">*</span>
+                </h3>
+                <p className="mt-1 text-xs text-ink-500">
+                  {t(
+                    locale,
+                    "All of the following must be attached before the request can be submitted.",
+                    "يجب إرفاق جميع المستندات التالية قبل إرسال الطلب.",
+                  )}
+                </p>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {REQUIRED_DOCS.map((d) => (
+                  <label
+                    key={d.key}
+                    className="flex items-center gap-2.5 rounded-lg border border-line bg-surface-1 px-3 py-2.5 text-sm text-ink-200"
+                  >
+                    <input
+                      type="checkbox"
+                      name={`requiredDoc_${d.key}`}
+                      required
+                      className="h-4 w-4 accent-sela-yellow"
+                    />
+                    {t(locale, d.en, d.ar)}
+                    <span className="text-red-400">*</span>
+                  </label>
+                ))}
+              </div>
+            </div>
 
             {/* ---- Duration & Commercials ---- */}
             <Section title={t(locale, DF_LABELS.commercials.en, DF_LABELS.commercials.ar)}>

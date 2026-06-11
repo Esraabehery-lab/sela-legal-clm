@@ -17,6 +17,7 @@ import type {
   ObligationStatus,
 } from "./types";
 import type { DfDetails } from "./df";
+import { REQUIRED_DOCS } from "./df";
 import {
   addRequest,
   audit,
@@ -75,6 +76,9 @@ function num(fd: FormData, key: string): number | undefined {
 /** Build the structured DF intake object from the submitted form. */
 function parseDfDetails(fd: FormData): DfDetails {
   const docs = fd.getAll("counterpartyDocs").filter((d): d is string => typeof d === "string");
+  const required = REQUIRED_DOCS.filter(
+    (d) => fd.get(`requiredDoc_${d.key}`) != null,
+  ).map((d) => d.en);
   const df: DfDetails = {
     documentType: str(fd, "documentType"),
     businessUnit: str(fd, "businessUnit"),
@@ -95,6 +99,7 @@ function parseDfDetails(fd: FormData): DfDetails {
     projectManager: str(fd, "projectManager"),
     projectManagerEmail: str(fd, "projectManagerEmail"),
     projectManagerPhone: str(fd, "projectManagerPhone"),
+    requiredDocs: required.length ? required : undefined,
     counterpartyDocs: docs.length ? docs : undefined,
     durationYears: num(fd, "durationYears"),
     durationMonths: num(fd, "durationMonths"),
@@ -158,8 +163,15 @@ export async function createRequest(formData: FormData): Promise<void> {
     requestedLanguage: (formData.get("requestedLanguage") as Locale) ?? "en",
   });
 
-  // Structured DF (DEF 2026) intake — all optional.
+  // Structured DF (DEF 2026) intake.
   const df = parseDfDetails(formData);
+
+  // All mandatory counterparty documents must be attached.
+  if ((df.requiredDocs?.length ?? 0) < REQUIRED_DOCS.length) {
+    throw new Error(
+      "All required documents must be attached before the request can be submitted.",
+    );
+  }
 
   const now = new Date().toISOString();
   const reference = nextReference();
