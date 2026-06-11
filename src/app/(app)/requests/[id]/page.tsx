@@ -82,6 +82,11 @@ export default function RequestDetailPage({
   const canUpload = canUploadDocuments(role);
   const canReRunAi = canRunAi(role);
 
+  // Business approvers (Head of BU, CSCCO, CFO) get a focused review screen:
+  // scope + DF details + approve/reject only — no AI contract / analysis.
+  const focusedReview =
+    role === "HEAD_OF_BU" || role === "CSCCO" || role === "CFO";
+
   return (
     <>
       <Link
@@ -140,7 +145,11 @@ export default function RequestDetailPage({
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* ---------------- Left / main column ---------------- */}
-        <div className="space-y-6 lg:col-span-2">
+        <div
+          className={
+            focusedReview ? "space-y-6 lg:col-span-3" : "space-y-6 lg:col-span-2"
+          }
+        >
           {/* Description */}
           <Card>
             <CardHeader>
@@ -290,7 +299,7 @@ export default function RequestDetailPage({
 
 
           {/* AI generated draft + clauses */}
-          {req.draft && (
+          {!focusedReview && req.draft && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
@@ -411,6 +420,7 @@ export default function RequestDetailPage({
         </div>
 
         {/* ---------------- Right column ---------------- */}
+        {!focusedReview && (
         <div className="space-y-6">
           {/* AI classification (US-003 / US-004) */}
           {cls && (
@@ -634,6 +644,7 @@ export default function RequestDetailPage({
             </CardContent>
           </Card>
         </div>
+        )}
       </div>
     </>
   );
