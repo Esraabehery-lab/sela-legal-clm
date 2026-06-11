@@ -33,6 +33,7 @@ export type RequestStatus =
   | "CONFIRMED" // business user confirmed the AI-generated contract
   | "CONTRACT_REVIEW" // contract reviewed by Procurement → Finance → Legal
   | "CONTRACT_REVISION" // back to business user to address review comments
+  | "FINAL_APPROVAL" // revised contract awaiting Legal Reviewer's final approval
   | "REJECTED"
   | "RETURNED" // rejected → returned to business user to edit & resubmit
   | "ARCHIVED" // rejected → archived (closed)

@@ -38,6 +38,7 @@ import {
   canEditRequest,
   canConfirmContract,
   canSubmitRevision,
+  canFinalApprove,
   canUploadDocuments,
   canRunAi,
   canEditDraft,
@@ -527,12 +528,28 @@ export async function submitRevisedContract(requestId: string): Promise<void> {
   const req = getRequest(requestId);
   if (!req) return;
   ensure(canSubmitRevision(getRole(), req.status));
+  req.status = "FINAL_APPROVAL";
+  audit(
+    req,
+    whoami(),
+    "Revised contract submitted",
+    "Addressed review comments — sent to Legal Reviewer for final approval",
+  );
+  revalidatePath(`/requests/${req.id}`);
+  revalidatePath("/dashboard");
+}
+
+/** Legal Reviewer's final approval — makes the contract ready to sign. */
+export async function finalApproveContract(requestId: string): Promise<void> {
+  const req = getRequest(requestId);
+  if (!req) return;
+  ensure(canFinalApprove(getRole(), req.status));
   req.status = "CONFIRMED";
   audit(
     req,
     whoami(),
-    "Contract revised",
-    "Business user addressed review comments — ready for signature",
+    "Final approval",
+    "Legal Reviewer gave final approval — ready for signature",
   );
   revalidatePath(`/requests/${req.id}`);
   revalidatePath("/dashboard");

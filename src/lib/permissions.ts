@@ -67,6 +67,11 @@ export function canSubmitRevision(role: Role, status: RequestStatus): boolean {
   );
 }
 
+/** Legal Reviewer gives the final approval on the revised contract. */
+export function canFinalApprove(role: Role, status: RequestStatus): boolean {
+  return (role === "LEGAL" || role === "LEGAL_OPS") && status === "FINAL_APPROVAL";
+}
+
 export function canManageObligations(role: Role): boolean {
   return role === "CONTRACT_OWNER" || role === "LEGAL_OPS";
 }
@@ -193,6 +198,9 @@ export function awaitsAction(req: RequestLike, role: Role): boolean {
 
   if (phase1Awaits(req, role) || phase2Awaits(req, role)) return true;
 
+  // Legal Reviewer's final approval on the revised contract.
+  if (role === "LEGAL" && req.status === "FINAL_APPROVAL") return true;
+
   if (role === "LEGAL_OPS")
     return (
       (req.status === "IN_APPROVAL" &&
@@ -203,6 +211,7 @@ export function awaitsAction(req: RequestLike, role: Role): boolean {
         )) ||
       req.status === "APPROVED" ||
       req.status === "CONTRACT_REVISION" ||
+      req.status === "FINAL_APPROVAL" ||
       req.status === "CONFIRMED"
     );
   return false;
