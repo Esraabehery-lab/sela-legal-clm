@@ -113,7 +113,10 @@ function TextField({
 }) {
   return (
     <div className={`space-y-2 ${full ? "sm:col-span-2 lg:col-span-3" : ""}`}>
-      <Label htmlFor={name}>{t(locale, lbl.en, lbl.ar)}</Label>
+      <Label htmlFor={name}>
+        {t(locale, lbl.en, lbl.ar)}
+        {required && <span className="ms-1 text-red-400">*</span>}
+      </Label>
       <Input
         id={name}
         name={name}

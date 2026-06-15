@@ -72,6 +72,7 @@ export function ScopeOfWorkField({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Label htmlFor="description">
           {t(locale, "Description / Scope", "الوصف / النطاق")}
+          <span className="ms-1 text-red-400">*</span>
         </Label>
         <input
           ref={inputRef}
