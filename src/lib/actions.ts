@@ -170,6 +170,7 @@ export async function createRequest(formData: FormData): Promise<void> {
 
   // Structured DF (DEF 2026) intake.
   const df = parseDfDetails(formData);
+  if (!df.financialType) throw new Error("Financial Type is required.");
 
   // All mandatory counterparty documents must be attached.
   if ((df.requiredDocs?.length ?? 0) < REQUIRED_DOCS.length) {
@@ -243,6 +244,7 @@ export async function updateRequest(formData: FormData): Promise<void> {
     requestedLanguage: (formData.get("requestedLanguage") as Locale) ?? "en",
   });
   const df = parseDfDetails(formData);
+  if (!df.financialType) throw new Error("Financial Type is required.");
   if ((df.requiredDocs?.length ?? 0) < REQUIRED_DOCS.length) {
     throw new Error(
       "All required documents must be attached before resubmitting.",

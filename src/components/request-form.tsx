@@ -137,6 +137,7 @@ function SelectField({
   options,
   defaultValue,
   placeholder = "—",
+  required = false,
 }: {
   name: string;
   lbl: Pair;
@@ -144,11 +145,15 @@ function SelectField({
   options: readonly string[];
   defaultValue?: string;
   placeholder?: string;
+  required?: boolean;
 }) {
   return (
     <div className="space-y-2">
-      <Label htmlFor={name}>{t(locale, lbl.en, lbl.ar)}</Label>
-      <Select id={name} name={name} defaultValue={defaultValue ?? ""}>
+      <Label htmlFor={name}>
+        {t(locale, lbl.en, lbl.ar)}
+        {required && <span className="ms-1 text-red-400">*</span>}
+      </Label>
+      <Select id={name} name={name} defaultValue={defaultValue ?? ""} required={required}>
         <option value="">{placeholder}</option>
         {options.map((o) => (
           <option key={o} value={o}>
@@ -241,7 +246,7 @@ export function RequestForm({
         <SelectField name="documentType" lbl={DF_LABELS.documentType} locale={locale} options={DOCUMENT_TYPES} defaultValue={v.documentType ?? "Contract"} />
         <SelectField name="businessUnit" lbl={DF_LABELS.businessUnit} locale={locale} options={BUSINESS_UNITS} defaultValue={v.businessUnit} />
         <SelectField name="contractNature" lbl={DF_LABELS.contractNature} locale={locale} options={CONTRACT_NATURES} defaultValue={v.contractNature} />
-        <SelectField name="financialType" lbl={DF_LABELS.financialType} locale={locale} options={FINANCIAL_TYPES} defaultValue={v.financialType} />
+        <SelectField name="financialType" lbl={DF_LABELS.financialType} locale={locale} options={FINANCIAL_TYPES} defaultValue={v.financialType} required />
         <SelectField name="binding" lbl={DF_LABELS.binding} locale={locale} options={BINDING_OPTIONS} defaultValue={v.binding ?? "Binding"} />
       </Section>
 
