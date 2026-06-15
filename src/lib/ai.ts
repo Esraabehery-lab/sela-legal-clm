@@ -26,6 +26,10 @@ function uid(prefix: string): string {
   return `${prefix}_${Date.now().toString(36)}_${counter}`;
 }
 
+// Financial types that represent money going out (spend) — these require
+// the CSCCO approval step. Cash-in (revenue) flows skip CSCCO.
+const CASH_OUT_TYPES = ["Cash-Out", "Rev. Share + Cash-Out", "Gov. Cash-Out"];
+
 const CATEGORY_KEYWORDS: Record<ContractCategory, string[]> = {
   NDA: ["nda", "non-disclosure", "confidential", "secrecy", "سرية", "إفشاء"],
   SERVICE_AGREEMENT: ["service", "services", "sla", "support", "خدمة", "خدمات"],
@@ -115,14 +119,15 @@ export function classify(req: DFRequest): AiClassification {
       severity: "LOW",
     });
 
-  // Fixed sequential approval chain for every request:
-  // Head of Business Unit → CSCCO → CFO → Legal Reviewer → Signature.
-  const routing: AiClassification["routing"] = [
-    "HEAD_OF_BU",
-    "CSCCO",
-    "CFO",
-    "LEGAL",
-  ];
+  // Sequential approval chain. CSCCO is only involved for cash-out (spend)
+  // flows — for cash-in (revenue) flows the CSCCO step is skipped.
+  const cashOut = CASH_OUT_TYPES.includes(req.df?.financialType ?? "");
+  const routing: AiClassification["routing"] = cashOut
+    ? ["HEAD_OF_BU", "CSCCO", "CFO", "LEGAL"]
+    : ["HEAD_OF_BU", "CFO", "LEGAL"];
+  const chainEn = routing
+    .map((s) => STAGE_LABELS_EN[s])
+    .join(" → ");
 
   const catLabel = CATEGORY_LABELS[best].en;
   const stakeholders = stakeholdersFor(best, req.department);
@@ -141,12 +146,23 @@ export function classify(req: DFRequest): AiClassification {
     stakeholders,
     riskIndicators,
     routing,
-    routingRationale:
-      "Sequential approval: Head of Business Unit → CSCCO → CFO → Legal Reviewer → Signature. Each step unlocks only after the previous approval.",
-    routingRationaleAr:
-      "اعتماد متسلسل: رئيس وحدة الأعمال ← CSCCO ← CFO ← المراجع القانوني ← التوقيع. تُفتح كل مرحلة بعد اعتماد المرحلة السابقة.",
+    routingRationale: `Sequential approval: ${chainEn} → Signature.${
+      cashOut ? "" : " CSCCO is skipped for cash-in flows."
+    } Each step unlocks only after the previous approval.`,
+    routingRationaleAr: `اعتماد متسلسل: ${chainEn} ← التوقيع.${
+      cashOut ? "" : " يتم تخطّي CSCCO في تدفقات التحصيل (Cash-In)."
+    } تُفتح كل مرحلة بعد اعتماد المرحلة السابقة.`,
   };
 }
+
+const STAGE_LABELS_EN: Record<string, string> = {
+  HEAD_OF_BU: "Head of Business Unit",
+  CSCCO: "CSCCO",
+  CFO: "CFO",
+  LEGAL: "Legal Reviewer",
+  PROCUREMENT: "Procurement Team",
+  FINANCE: "Finance Team",
+};
 
 function stakeholdersFor(cat: ContractCategory, dept: string): string[] {
   const base = [`${dept} (Requesting Unit)`, "Legal Department"];

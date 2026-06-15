@@ -253,11 +253,9 @@ export default function RequestDetailPage({
                 </CardTitle>
                 {!focusedReview && (
                   <CardDescription>
-                    {t(
-                      locale,
-                      "Head of Business Unit → CSCCO → CFO → Legal",
-                      "رئيس وحدة الأعمال ← CSCCO ← CFO ← القانونية",
-                    )}
+                    {req.approvals
+                      .map((a) => label(STAGE_LABELS, a.stage, locale))
+                      .join(" → ")}
                   </CardDescription>
                 )}
               </CardHeader>
