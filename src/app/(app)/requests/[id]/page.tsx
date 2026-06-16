@@ -189,7 +189,7 @@ export default function RequestDetailPage({
             <form action={signByUser.bind(null, req.id)}>
               <Button size="sm" variant="mint" type="submit">
                 <PenLine className="h-4 w-4" />
-                {t(locale, "Sign Contract", "توقيع العقد")}
+                {t(locale, "Sign & Submit", "توقيع وإرسال")}
               </Button>
             </form>
           )}
