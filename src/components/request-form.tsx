@@ -98,6 +98,7 @@ function TextField({
   locale,
   type = "text",
   required = false,
+  minLength,
   placeholder,
   full = false,
   defaultValue,
@@ -107,6 +108,7 @@ function TextField({
   locale: Locale;
   type?: string;
   required?: boolean;
+  minLength?: number;
   placeholder?: string;
   full?: boolean;
   defaultValue?: string;
@@ -122,6 +124,7 @@ function TextField({
         name={name}
         type={type}
         required={required}
+        minLength={minLength}
         min={type === "number" ? 0 : undefined}
         placeholder={placeholder}
         defaultValue={defaultValue}
@@ -196,6 +199,7 @@ export function RequestForm({
           lbl={{ en: "Request Title", ar: "عنوان الطلب" }}
           locale={locale}
           required
+          minLength={3}
           full
           defaultValue={v.title}
           placeholder={t(
@@ -210,6 +214,7 @@ export function RequestForm({
           lbl={{ en: "Requester Name", ar: "اسم مقدم الطلب" }}
           locale={locale}
           required
+          minLength={2}
           defaultValue={v.requesterName}
         />
         <div className="space-y-2">
@@ -263,7 +268,7 @@ export function RequestForm({
 
       {/* ---- Counterparty ---- */}
       <Section title={t(locale, DF_LABELS.counterparty.en, DF_LABELS.counterparty.ar)}>
-        <TextField name="counterparty" lbl={{ en: "Counterparty / Vendor", ar: "الطرف المقابل / المورد" }} locale={locale} required defaultValue={v.counterparty} />
+        <TextField name="counterparty" lbl={{ en: "Counterparty / Vendor", ar: "الطرف المقابل / المورد" }} locale={locale} required minLength={2} defaultValue={v.counterparty} />
         <TextField name="legalName" lbl={DF_LABELS.legalName} locale={locale} defaultValue={v.legalName} />
         <TextField name="address" lbl={DF_LABELS.address} locale={locale} defaultValue={v.address} />
         <TextField name="authorizedSignatory" lbl={DF_LABELS.authorizedSignatory} locale={locale} defaultValue={v.authorizedSignatory} />
