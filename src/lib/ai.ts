@@ -10,6 +10,7 @@
 
 import type {
   AiClassification,
+  ApprovalStage,
   Clause,
   ComplianceFinding,
   ContractCategory,
@@ -26,9 +27,20 @@ function uid(prefix: string): string {
   return `${prefix}_${Date.now().toString(36)}_${counter}`;
 }
 
-// Financial types that represent money going out (spend) — these require
-// the CSCCO approval step. Cash-in (revenue) flows skip CSCCO.
-const CASH_OUT_TYPES = ["Cash-Out", "Rev. Share + Cash-Out", "Gov. Cash-Out"];
+// Approval chain per DF Financial Type (derived from the DEF examples):
+// - No Financial Value → Head of BU → Legal (legal review only)
+// - Cash-In / Gov. Cash-In / Revenue Share → Head of BU → CFO → Legal
+// - Cash-Out / Rev. Share + Cash-Out / Gov. Cash-Out → Head of BU → CSCCO → CFO → Legal
+const ROUTING_BY_FINANCIAL: Record<string, ApprovalStage[]> = {
+  "No Financial Value": ["HEAD_OF_BU", "LEGAL"],
+  "Cash-In": ["HEAD_OF_BU", "CFO", "LEGAL"],
+  "Gov. Cash-In": ["HEAD_OF_BU", "CFO", "LEGAL"],
+  "Revenue Share": ["HEAD_OF_BU", "CFO", "LEGAL"],
+  "Cash-Out": ["HEAD_OF_BU", "CSCCO", "CFO", "LEGAL"],
+  "Rev. Share + Cash-Out": ["HEAD_OF_BU", "CSCCO", "CFO", "LEGAL"],
+  "Gov. Cash-Out": ["HEAD_OF_BU", "CSCCO", "CFO", "LEGAL"],
+};
+const DEFAULT_ROUTING: ApprovalStage[] = ["HEAD_OF_BU", "CFO", "LEGAL"];
 
 const CATEGORY_KEYWORDS: Record<ContractCategory, string[]> = {
   NDA: ["nda", "non-disclosure", "confidential", "secrecy", "سرية", "إفشاء"],
@@ -119,15 +131,11 @@ export function classify(req: DFRequest): AiClassification {
       severity: "LOW",
     });
 
-  // Sequential approval chain. CSCCO is only involved for cash-out (spend)
-  // flows — for cash-in (revenue) flows the CSCCO step is skipped.
-  const cashOut = CASH_OUT_TYPES.includes(req.df?.financialType ?? "");
-  const routing: AiClassification["routing"] = cashOut
-    ? ["HEAD_OF_BU", "CSCCO", "CFO", "LEGAL"]
-    : ["HEAD_OF_BU", "CFO", "LEGAL"];
-  const chainEn = routing
-    .map((s) => STAGE_LABELS_EN[s])
-    .join(" → ");
+  // Sequential approval chain decided by the DF Financial Type.
+  const financialType = req.df?.financialType ?? "";
+  const routing: AiClassification["routing"] =
+    ROUTING_BY_FINANCIAL[financialType] ?? DEFAULT_ROUTING;
+  const chainEn = routing.map((s) => STAGE_LABELS_EN[s]).join(" → ");
 
   const catLabel = CATEGORY_LABELS[best].en;
   const stakeholders = stakeholdersFor(best, req.department);
@@ -146,12 +154,12 @@ export function classify(req: DFRequest): AiClassification {
     stakeholders,
     riskIndicators,
     routing,
-    routingRationale: `Sequential approval: ${chainEn} → Signature.${
-      cashOut ? "" : " CSCCO is skipped for cash-in flows."
-    } Each step unlocks only after the previous approval.`,
-    routingRationaleAr: `اعتماد متسلسل: ${chainEn} ← التوقيع.${
-      cashOut ? "" : " يتم تخطّي CSCCO في تدفقات التحصيل (Cash-In)."
-    } تُفتح كل مرحلة بعد اعتماد المرحلة السابقة.`,
+    routingRationale: `Sequential approval based on Financial Type${
+      financialType ? ` (${financialType})` : ""
+    }: ${chainEn} → Signature. Each step unlocks only after the previous approval.`,
+    routingRationaleAr: `اعتماد متسلسل بحسب النوع المالي${
+      financialType ? ` (${financialType})` : ""
+    }: ${chainEn} ← التوقيع. تُفتح كل مرحلة بعد اعتماد المرحلة السابقة.`,
   };
 }
 
