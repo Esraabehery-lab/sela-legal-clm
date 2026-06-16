@@ -7,7 +7,7 @@ import { reviewContract } from "@/lib/actions";
 import { t } from "@/lib/i18n";
 import type { Locale, ApprovalStage } from "@/lib/types";
 import { toast } from "sonner";
-import { Check } from "lucide-react";
+import { Check, X } from "lucide-react";
 
 /**
  * Contract-review action (Procurement / Finance / Legal). A comment is
@@ -38,7 +38,6 @@ export function ContractReviewActions({
     >
       <input type="hidden" name="requestId" value={requestId} />
       <input type="hidden" name="stage" value={stage} />
-      <input type="hidden" name="decision" value="APPROVED" />
       <Textarea
         name="comment"
         required
@@ -52,9 +51,27 @@ export function ContractReviewActions({
         )}
       />
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="submit" size="sm" variant="mint" disabled={!ready}>
+        <Button
+          type="submit"
+          name="decision"
+          value="APPROVED"
+          size="sm"
+          variant="mint"
+          disabled={!ready}
+        >
           <Check className="h-4 w-4" />
           {t(locale, "Submit", "إرسال")}
+        </Button>
+        <Button
+          type="submit"
+          name="decision"
+          value="REJECTED"
+          size="sm"
+          variant="destructive"
+          disabled={!ready}
+        >
+          <X className="h-4 w-4" />
+          {t(locale, "Reject", "رفض")}
         </Button>
       </div>
     </form>
