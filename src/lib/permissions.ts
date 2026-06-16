@@ -17,16 +17,29 @@ export function canRunAi(role: Role): boolean {
 }
 
 export function canEditDraft(role: Role, status?: RequestStatus): boolean {
-  if (role !== "BUSINESS_USER" && role !== "LEGAL_OPS") return false;
+  const businessEditor = role === "BUSINESS_USER" || role === "LEGAL_OPS";
+  // Procurement / Finance / Legal teams can change the contract during review.
+  const reviewEditor =
+    role === "PROCUREMENT" || role === "FINANCE" || role === "LEGAL";
+  if (!businessEditor && !reviewEditor) return false;
   if (!status) return true;
-  // The business user can edit the contract while it's in draft/review phases.
-  return (
-    status === "DRAFT_GENERATED" ||
-    status === "BU_REVIEW" ||
-    status === "APPROVED" ||
-    status === "CONTRACT_REVIEW" ||
-    status === "CONTRACT_REVISION"
-  );
+
+  if (
+    businessEditor &&
+    (status === "DRAFT_GENERATED" ||
+      status === "BU_REVIEW" ||
+      status === "APPROVED" ||
+      status === "CONTRACT_REVIEW" ||
+      status === "CONTRACT_REVISION")
+  )
+    return true;
+
+  // Review teams edit the contract while it is in contract review.
+  if (reviewEditor && status === "CONTRACT_REVIEW") return true;
+  // Legal can also edit during their final approval.
+  if (role === "LEGAL" && status === "FINAL_APPROVAL") return true;
+
+  return false;
 }
 
 export function canEditRequest(role: Role, status: RequestStatus): boolean {
