@@ -75,9 +75,18 @@ export function canConfirmContract(role: Role, status: RequestStatus): boolean {
   );
 }
 
-export function canSign(role: Role, status: RequestStatus): boolean {
+/** The business user signs the contract in the portal (first signature). */
+export function canSignByUser(role: Role, status: RequestStatus): boolean {
   return (
-    (role === "CONTRACT_OWNER" || role === "LEGAL_OPS") && status === "CONFIRMED"
+    (role === "BUSINESS_USER" || role === "LEGAL_OPS") &&
+    status === "USER_SIGNATURE"
+  );
+}
+
+/** The Legal Reviewer counter-signs after the user (final execution). */
+export function canSignByLegal(role: Role, status: RequestStatus): boolean {
+  return (
+    (role === "LEGAL" || role === "LEGAL_OPS") && status === "LEGAL_SIGNATURE"
   );
 }
 
@@ -215,14 +224,19 @@ export function awaitsAction(req: RequestLike, role: Role): boolean {
       req.status === "RETURNED" ||
       req.status === "APPROVED" || // confirm the AI-generated contract
       req.status === "CONTRACT_REVIEW" || // contract under review — can edit
-      req.status === "CONTRACT_REVISION" // address review comments
+      req.status === "CONTRACT_REVISION" || // address review comments
+      req.status === "USER_SIGNATURE" // sign the contract in the portal
     );
   if (role === "CONTRACT_OWNER") return req.status === "CONFIRMED";
 
   if (phase1Awaits(req, role) || phase2Awaits(req, role)) return true;
 
-  // Legal Reviewer's final approval on the revised contract.
-  if (role === "LEGAL" && req.status === "FINAL_APPROVAL") return true;
+  // Legal Reviewer's final approval + counter-signature.
+  if (
+    role === "LEGAL" &&
+    (req.status === "FINAL_APPROVAL" || req.status === "LEGAL_SIGNATURE")
+  )
+    return true;
 
   if (role === "LEGAL_OPS")
     return (
@@ -235,6 +249,8 @@ export function awaitsAction(req: RequestLike, role: Role): boolean {
       req.status === "APPROVED" ||
       req.status === "CONTRACT_REVISION" ||
       req.status === "FINAL_APPROVAL" ||
+      req.status === "USER_SIGNATURE" ||
+      req.status === "LEGAL_SIGNATURE" ||
       req.status === "CONFIRMED"
     );
   return false;

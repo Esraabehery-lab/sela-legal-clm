@@ -34,6 +34,8 @@ export type RequestStatus =
   | "CONTRACT_REVIEW" // contract reviewed by Procurement → Finance → Legal
   | "CONTRACT_REVISION" // back to business user to address review comments
   | "FINAL_APPROVAL" // revised contract awaiting Legal Reviewer's final approval
+  | "USER_SIGNATURE" // awaiting the business user's signature
+  | "LEGAL_SIGNATURE" // signed by user, awaiting Legal Reviewer's counter-signature
   | "REJECTED"
   | "RETURNED" // rejected → returned to business user to edit & resubmit
   | "ARCHIVED" // rejected → archived (closed)
@@ -209,7 +211,12 @@ export interface DFRequest {
   obligations: Obligation[];
   compliance: ComplianceFinding[];
   riskScore?: number; // 0..100 (US-011)
-  signedAt?: string;
+  // E-signatures: user signs first, then Legal counter-signs.
+  signedByUser?: string;
+  signedByUserAt?: string;
+  signedByLegal?: string;
+  signedByLegalAt?: string;
+  signedAt?: string; // final execution timestamp
   signedBy?: string;
   audit: AuditEntry[];
 }

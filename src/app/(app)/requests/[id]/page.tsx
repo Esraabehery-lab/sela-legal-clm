@@ -38,7 +38,8 @@ import {
   confirmContract,
   submitRevisedContract,
   finalApproveContract,
-  signContract,
+  signByUser,
+  signByLegal,
 } from "@/lib/actions";
 import { ApprovalActions } from "@/components/approval-actions";
 import { ApprovalProgress } from "@/components/approval-progress";
@@ -48,7 +49,8 @@ import {
   canApproveStage,
   canEditDraft as canEditDraftFn,
   canSubmitForApproval,
-  canSign as canSignFn,
+  canSignByUser,
+  canSignByLegal,
   canManageObligations as canManageObligationsFn,
   canUploadDocuments,
   canRunAi,
@@ -88,7 +90,8 @@ export default function RequestDetailPage({
   const cls = req.classification;
   const canEditDraft = canEditDraftFn(role, req.status);
   const canSubmit = canSubmitForApproval(role, req.status);
-  const canSign = canSignFn(role, req.status);
+  const canUserSign = canSignByUser(role, req.status);
+  const canLegalSign = canSignByLegal(role, req.status);
   const canManageObligations = canManageObligationsFn(role);
   const canUpload = canUploadDocuments(role);
   const canReRunAi = canRunAi(role);
@@ -105,6 +108,8 @@ export default function RequestDetailPage({
     req.status === "CONTRACT_REVIEW" ||
     req.status === "CONTRACT_REVISION" ||
     req.status === "FINAL_APPROVAL" ||
+    req.status === "USER_SIGNATURE" ||
+    req.status === "LEGAL_SIGNATURE" ||
     req.status === "SIGNED" ||
     req.status === "ACTIVE";
   // Scope-only approvers never see the contract.
@@ -180,11 +185,19 @@ export default function RequestDetailPage({
               </Button>
             </form>
           )}
-          {canSign && (
-            <form action={signContract.bind(null, req.id)}>
+          {canUserSign && (
+            <form action={signByUser.bind(null, req.id)}>
               <Button size="sm" variant="mint" type="submit">
                 <PenLine className="h-4 w-4" />
-                {t(locale, "Mark as Signed", "تحديد كموقّع")}
+                {t(locale, "Sign Contract", "توقيع العقد")}
+              </Button>
+            </form>
+          )}
+          {canLegalSign && (
+            <form action={signByLegal.bind(null, req.id)}>
+              <Button size="sm" variant="mint" type="submit">
+                <PenLine className="h-4 w-4" />
+                {t(locale, "Counter-sign Contract", "التوقيع المقابل")}
               </Button>
             </form>
           )}
@@ -379,6 +392,32 @@ export default function RequestDetailPage({
                         {t(locale, "Final Approve", "الاعتماد النهائي")}
                       </Button>
                     </form>
+                  </div>
+                )}
+                {(req.signedByUser || req.signedByLegal) && (
+                  <div className="space-y-1.5 rounded-lg border border-line bg-surface-1 p-4 text-xs">
+                    <div className="font-medium text-ink-200">
+                      {t(locale, "Signatures", "التواقيع")}
+                    </div>
+                    {req.signedByUser && (
+                      <div className="flex items-center gap-2 text-ink-400">
+                        <PenLine className="h-3.5 w-3.5 text-sela-mint" />
+                        {t(locale, "User", "المستخدم")}: {req.signedByUser}
+                        {req.signedByUserAt
+                          ? ` · ${formatDateTime(req.signedByUserAt, locale)}`
+                          : ""}
+                      </div>
+                    )}
+                    {req.signedByLegal && (
+                      <div className="flex items-center gap-2 text-ink-400">
+                        <PenLine className="h-3.5 w-3.5 text-sela-mint" />
+                        {t(locale, "Legal Reviewer", "المراجع القانوني")}:{" "}
+                        {req.signedByLegal}
+                        {req.signedByLegalAt
+                          ? ` · ${formatDateTime(req.signedByLegalAt, locale)}`
+                          : ""}
+                      </div>
+                    )}
                   </div>
                 )}
                 <DraftEditor

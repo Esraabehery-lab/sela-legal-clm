@@ -39,12 +39,13 @@ import {
   canConfirmContract,
   canSubmitRevision,
   canFinalApprove,
+  canSignByUser,
+  canSignByLegal,
   canUploadDocuments,
   canRunAi,
   canEditDraft,
   canSubmitForApproval,
   canApproveStage,
-  canSign,
   canManageObligations,
   isStageActionable,
 } from "./permissions";
@@ -541,31 +542,52 @@ export async function submitRevisedContract(requestId: string): Promise<void> {
   revalidatePath("/dashboard");
 }
 
-/** Legal Reviewer's final approval — makes the contract ready to sign. */
+/** Legal Reviewer's final approval — sends the contract to the user to sign. */
 export async function finalApproveContract(requestId: string): Promise<void> {
   const req = getRequest(requestId);
   if (!req) return;
   ensure(canFinalApprove(getRole(), req.status));
-  req.status = "CONFIRMED";
+  req.status = "USER_SIGNATURE";
   audit(
     req,
     whoami(),
     "Final approval",
-    "Legal Reviewer gave final approval — ready for signature",
+    "Legal Reviewer gave final approval — sent to the user to sign",
   );
   revalidatePath(`/requests/${req.id}`);
   revalidatePath("/dashboard");
 }
 
-/** US-012: mark the contract signed + executed, then extract obligations. */
-export async function signContract(requestId: string): Promise<void> {
+/** The business user signs the contract in the portal, then it goes to Legal. */
+export async function signByUser(requestId: string): Promise<void> {
   const req = getRequest(requestId);
   if (!req) return;
-  ensure(canSign(getRole(), req.status));
-  req.status = "SIGNED";
-  req.signedAt = new Date().toISOString();
+  ensure(canSignByUser(getRole(), req.status));
+  req.signedByUser = whoami();
+  req.signedByUserAt = new Date().toISOString();
+  req.status = "LEGAL_SIGNATURE";
+  audit(
+    req,
+    whoami(),
+    "Signed by user",
+    "Contract signed by the user — sent to Legal Reviewer to counter-sign",
+  );
+  revalidatePath(`/requests/${req.id}`);
+  revalidatePath("/dashboard");
+}
+
+/** The Legal Reviewer counter-signs; the contract is then executed. */
+export async function signByLegal(requestId: string): Promise<void> {
+  const req = getRequest(requestId);
+  if (!req) return;
+  ensure(canSignByLegal(getRole(), req.status));
+  const now = new Date().toISOString();
+  req.signedByLegal = whoami();
+  req.signedByLegalAt = now;
+  req.signedAt = now;
   req.signedBy = whoami();
-  audit(req, whoami(), "Contract signed", "Execution complete");
+  req.status = "SIGNED";
+  audit(req, whoami(), "Signed by Legal", "Counter-signed — execution complete");
 
   // US-013/014/015: AI extraction + department assignment
   req.obligations = extractObligations(req);
@@ -577,6 +599,7 @@ export async function signContract(requestId: string): Promise<void> {
     `${req.obligations.length} obligations assigned to departments`,
   );
   revalidatePath(`/requests/${req.id}`);
+  revalidatePath("/dashboard");
 }
 
 const obSchema = z.object({
