@@ -388,44 +388,6 @@ export default function RequestDetailPage({
                   locale={locale}
                 />
 
-                {!focusedReview && role !== "BUSINESS_USER" && (
-                  <>
-                <Separator />
-
-                {/* Recommended clauses (US-006) */}
-                <div>
-                  <h4 className="mb-3 flex items-center gap-2 text-sm font-medium text-ink-100">
-                    <Sparkles className="h-4 w-4 text-sela-mint" />
-                    {t(locale, "Recommended Clauses", "البنود الموصى بها")}
-                  </h4>
-                  <div className="space-y-2">
-                    {req.draft.clauses.map((c) => (
-                      <div
-                        key={c.id}
-                        className="rounded-lg border border-line bg-surface-1 p-3"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-sm font-medium text-ink-50">
-                            {locale === "ar" ? c.titleAr : c.title}
-                          </span>
-                          <Badge variant={c.recommended ? "mint" : "outline"}>
-                            {c.recommended
-                              ? t(locale, "Recommended", "موصى به")
-                              : t(locale, "Optional", "اختياري")}
-                          </Badge>
-                        </div>
-                        <p className="mt-1 text-xs text-ink-400">{c.body}</p>
-                        <p className="mt-1 text-xs italic text-ink-500">
-                          {t(locale, "Why", "السبب")}:{" "}
-                          {locale === "ar" ? c.rationaleAr : c.rationale}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                  </>
-                )}
-
                 {/* Version history (US-007) */}
                 {req.versions.length > 0 && (
                   <>
