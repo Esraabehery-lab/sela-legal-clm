@@ -558,17 +558,26 @@ export async function finalApproveContract(requestId: string): Promise<void> {
   revalidatePath("/dashboard");
 }
 
+const signSchema = z.object({
+  requestId: z.string(),
+  signerName: z.string().min(2),
+});
+
 /** The business user signs the contract in the portal, then it goes to Legal. */
-export async function signByUser(requestId: string): Promise<void> {
+export async function signByUser(formData: FormData): Promise<void> {
+  const { requestId, signerName } = signSchema.parse({
+    requestId: formData.get("requestId"),
+    signerName: formData.get("signerName"),
+  });
   const req = getRequest(requestId);
   if (!req) return;
   ensure(canSignByUser(getRole(), req.status));
-  req.signedByUser = whoami();
+  req.signedByUser = signerName;
   req.signedByUserAt = new Date().toISOString();
   req.status = "LEGAL_SIGNATURE";
   audit(
     req,
-    whoami(),
+    signerName,
     "Signed by user",
     "Contract signed by the user — sent to Legal Reviewer to counter-sign",
   );
@@ -577,17 +586,21 @@ export async function signByUser(requestId: string): Promise<void> {
 }
 
 /** The Legal Reviewer counter-signs; the contract is then executed. */
-export async function signByLegal(requestId: string): Promise<void> {
+export async function signByLegal(formData: FormData): Promise<void> {
+  const { requestId, signerName } = signSchema.parse({
+    requestId: formData.get("requestId"),
+    signerName: formData.get("signerName"),
+  });
   const req = getRequest(requestId);
   if (!req) return;
   ensure(canSignByLegal(getRole(), req.status));
   const now = new Date().toISOString();
-  req.signedByLegal = whoami();
+  req.signedByLegal = signerName;
   req.signedByLegalAt = now;
   req.signedAt = now;
-  req.signedBy = whoami();
+  req.signedBy = signerName;
   req.status = "SIGNED";
-  audit(req, whoami(), "Signed by Legal", "Counter-signed — execution complete");
+  audit(req, signerName, "Signed by Legal", "Counter-signed — execution complete");
 
   // US-013/014/015: AI extraction + department assignment
   req.obligations = extractObligations(req);

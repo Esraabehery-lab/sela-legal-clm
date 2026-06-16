@@ -45,6 +45,7 @@ import { ApprovalActions } from "@/components/approval-actions";
 import { ApprovalProgress } from "@/components/approval-progress";
 import { DownloadContractPdf } from "@/components/download-contract-pdf";
 import { ContractReviewActions } from "@/components/contract-review-actions";
+import { SignContract } from "@/components/sign-contract";
 import {
   canApproveStage,
   canEditDraft as canEditDraftFn,
@@ -182,22 +183,6 @@ export default function RequestDetailPage({
               <Button size="sm" type="submit">
                 <Send className="h-4 w-4" />
                 {t(locale, "Submit for Approval", "إرسال للاعتماد")}
-              </Button>
-            </form>
-          )}
-          {canUserSign && (
-            <form action={signByUser.bind(null, req.id)}>
-              <Button size="sm" variant="mint" type="submit">
-                <PenLine className="h-4 w-4" />
-                {t(locale, "Sign & Submit", "توقيع وإرسال")}
-              </Button>
-            </form>
-          )}
-          {canLegalSign && (
-            <form action={signByLegal.bind(null, req.id)}>
-              <Button size="sm" variant="mint" type="submit">
-                <PenLine className="h-4 w-4" />
-                {t(locale, "Counter-sign Contract", "التوقيع المقابل")}
               </Button>
             </form>
           )}
@@ -393,6 +378,32 @@ export default function RequestDetailPage({
                       </Button>
                     </form>
                   </div>
+                )}
+                {canUserSign && (
+                  <SignContract
+                    requestId={req.id}
+                    action={signByUser}
+                    title={t(
+                      locale,
+                      "This contract has Legal's final approval. Sign it to proceed.",
+                      "حصل هذا العقد على الاعتماد النهائي من القانونية. وقّعه للمتابعة.",
+                    )}
+                    buttonLabel={t(locale, "Sign & Submit to Legal", "توقيع وإرسال للقانونية")}
+                    locale={locale}
+                  />
+                )}
+                {canLegalSign && (
+                  <SignContract
+                    requestId={req.id}
+                    action={signByLegal}
+                    title={t(
+                      locale,
+                      "The user has signed. Counter-sign to execute the contract.",
+                      "وقّع المستخدم. وقّع كطرف مقابل لإتمام تنفيذ العقد.",
+                    )}
+                    buttonLabel={t(locale, "Counter-sign & Execute", "التوقيع المقابل والتنفيذ")}
+                    locale={locale}
+                  />
                 )}
                 {(req.signedByUser || req.signedByLegal) && (
                   <div className="space-y-1.5 rounded-lg border border-line bg-surface-1 p-4 text-xs">
