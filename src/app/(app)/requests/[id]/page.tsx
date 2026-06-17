@@ -46,6 +46,7 @@ import { ApprovalProgress } from "@/components/approval-progress";
 import { DownloadContractPdf } from "@/components/download-contract-pdf";
 import { ContractReviewActions } from "@/components/contract-review-actions";
 import { SignContract } from "@/components/sign-contract";
+import { SelaLogo } from "@/components/sela-logo";
 import {
   canApproveStage,
   canEditDraft as canEditDraftFn,
@@ -318,6 +319,7 @@ export default function RequestDetailPage({
             <Card>
               <CardHeader className="flex-row items-start justify-between gap-3">
                 <div className="space-y-1.5">
+                <SelaLogo withTagline={false} className="mb-1" />
                 <CardTitle className="flex items-center gap-2 text-base">
                   <FileText className="h-4 w-4 text-sela-yellow" />
                   {t(locale, "AI-Generated Contract", "العقد المُولّد بالذكاء")}

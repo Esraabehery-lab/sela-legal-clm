@@ -35,7 +35,24 @@ export function DownloadContractPdf({
       const usableW = pageW - margin * 2;
       let y = margin;
 
+      // SELA brand header
+      doc.setFillColor(227, 27, 35); // SELA red
+      doc.roundedRect(margin, y - 2, 16, 16, 3, 3, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(22);
+      doc.setTextColor(33, 33, 33);
+      doc.text("SELA", margin + 24, y + 11);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6.5);
+      doc.setTextColor(130, 130, 130);
+      doc.text("SPECTACULAR. EVERYDAY.", margin + 24, y + 19);
+      y += 30;
+      doc.setDrawColor(210, 210, 210);
+      doc.line(margin, y, pageW - margin, y);
+      y += 20;
+
       // Title
+      doc.setTextColor(20, 20, 20);
       doc.setFont("times", "bold");
       doc.setFontSize(14);
       for (const line of doc.splitTextToSize(title, usableW)) {
