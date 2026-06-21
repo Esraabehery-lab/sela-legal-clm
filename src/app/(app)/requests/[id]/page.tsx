@@ -427,10 +427,10 @@ export default function RequestDetailPage({
                     action={signByUser}
                     title={t(
                       locale,
-                      "This contract has Legal's final approval. Sign it to proceed.",
-                      "حصل هذا العقد على الاعتماد النهائي من القانونية. وقّعه للمتابعة.",
+                      "Procurement, Finance and Legal have approved. Sign the contract with your name.",
+                      "اعتمدت المشتريات والمالية والقانونية العقد. وقّع العقد باسمك.",
                     )}
-                    buttonLabel={t(locale, "Sign & Submit to Legal", "توقيع وإرسال للقانونية")}
+                    buttonLabel={t(locale, "Sign & Send to Legal", "توقيع وإرسال للقانونية")}
                     locale={locale}
                   />
                 )}
@@ -440,10 +440,10 @@ export default function RequestDetailPage({
                     action={signByLegal}
                     title={t(
                       locale,
-                      "The user has signed. Counter-sign to execute the contract.",
-                      "وقّع المستخدم. وقّع كطرف مقابل لإتمام تنفيذ العقد.",
+                      "The user has signed. Sign with your name to give the final approval and execute.",
+                      "وقّع المستخدم. وقّع باسمك لمنح الاعتماد النهائي وتنفيذ العقد.",
                     )}
-                    buttonLabel={t(locale, "Counter-sign & Execute", "التوقيع المقابل والتنفيذ")}
+                    buttonLabel={t(locale, "Sign & Final Approve", "توقيع واعتماد نهائي")}
                     locale={locale}
                   />
                 )}

@@ -522,14 +522,23 @@ export async function reviewContract(formData: FormData): Promise<void> {
   const allReviewed = req.contractReviews.every(
     (a) => a.decision === "APPROVED",
   );
-  if (decision === "REJECTED" || allReviewed) {
-    // Return to the business user to address the review comments.
+  if (decision === "REJECTED") {
+    // A rejection returns it to the business user to address the comments.
     req.status = "CONTRACT_REVISION";
     audit(
       req,
       "System",
       "Returned for contract revision",
       "Business user to address the contract review comments",
+    );
+  } else if (allReviewed) {
+    // Procurement → Finance → Legal all approved — the business user signs next.
+    req.status = "USER_SIGNATURE";
+    audit(
+      req,
+      "System",
+      "Contract review complete",
+      "Procurement, Finance and Legal approved — sent to the user to sign",
     );
   }
   revalidatePath(`/requests/${req.id}`);
