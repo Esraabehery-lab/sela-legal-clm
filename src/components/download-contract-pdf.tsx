@@ -16,7 +16,7 @@ const PRINT_CSS = `
   .ct-word { font-family:Arial,sans-serif; font-weight:700; font-size:20px; color:#333; }
   .ct-ref { font-family:Arial,sans-serif; font-size:12px; color:#777; }
   .ct-title { text-align:center; font-size:18px; font-weight:700; margin:6px 0 18px; color:#7a7d82; }
-  .ct-h2 { font-size:14px; font-weight:700; color:#b3151c; border-bottom:1px solid #ddd; padding-bottom:4px; margin:20px 0 10px; }
+  .ct-h2 { font-size:14px; font-weight:700; color:#7a7d82; border-bottom:1px solid #ddd; padding-bottom:4px; margin:20px 0 10px; }
   .ct-h3 { font-size:13px; font-weight:700; color:#1a1a1a; margin:16px 0 6px; }
   table.ct-table { width:100%; border-collapse:collapse; margin:8px 0 14px; font-size:12.5px; }
   table.ct-table th, table.ct-table td { border:1px solid #bfbfbf; padding:6px 9px; vertical-align:top; }
