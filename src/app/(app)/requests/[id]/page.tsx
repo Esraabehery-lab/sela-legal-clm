@@ -115,6 +115,7 @@ export default function RequestDetailPage({
     req.status === "CONTRACT_REVISION" ||
     req.status === "FINAL_APPROVAL" ||
     req.status === "THIRD_PARTY_REVIEW" ||
+    req.status === "NEGOTIATION_REVIEW" ||
     req.status === "FINAL_CONFIRM" ||
     req.status === "USER_SIGNATURE" ||
     req.status === "LEGAL_SIGNATURE" ||

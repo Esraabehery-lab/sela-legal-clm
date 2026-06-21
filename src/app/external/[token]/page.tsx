@@ -48,38 +48,40 @@ export default function ExternalReviewPage({
             <FileText className="h-3.5 w-3.5" />
             {req.draft.title}
           </div>
-          <div className="max-h-[520px] overflow-auto whitespace-pre-wrap rounded-lg border border-line bg-surface-1 p-4 font-mono text-[13px] leading-relaxed text-ink-200">
-            {body}
-          </div>
 
           {review ? (
-            <div className="flex items-start gap-2.5 rounded-lg border border-sela-mint/30 bg-sela-mint/[0.06] p-4 text-sm">
-              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-sela-mint" />
-              <div>
-                <div className="font-medium text-ink-100">
-                  {t(locale, "Your response was submitted", "تم إرسال ردكم")} —{" "}
-                  {review.decision === "APPROVED"
-                    ? t(locale, "Approved", "موافقة")
-                    : t(locale, "Changes requested", "طلب تعديلات")}
+            <>
+              <div className="flex items-start gap-2.5 rounded-lg border border-sela-mint/30 bg-sela-mint/[0.06] p-4 text-sm">
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-sela-mint" />
+                <div>
+                  <div className="font-medium text-ink-100">
+                    {t(locale, "Your response was submitted", "تم إرسال ردكم")} —{" "}
+                    {review.decision === "APPROVED"
+                      ? t(locale, "Approved", "موافقة")
+                      : t(locale, "Changes requested", "طلب تعديلات")}
+                  </div>
+                  <div className="text-xs text-ink-400">
+                    {review.name} · {formatDateTime(review.reviewedAt, locale)}
+                  </div>
+                  {review.comment && (
+                    <p className="mt-1 text-xs text-ink-300">“{review.comment}”</p>
+                  )}
                 </div>
-                <div className="text-xs text-ink-400">
-                  {review.name} · {formatDateTime(review.reviewedAt, locale)}
-                </div>
-                {review.comment && (
-                  <p className="mt-1 text-xs text-ink-300">“{review.comment}”</p>
-                )}
               </div>
-            </div>
+              <div className="max-h-[520px] overflow-auto whitespace-pre-wrap rounded-lg border border-line bg-surface-1 p-4 font-mono text-[13px] leading-relaxed text-ink-200">
+                {body}
+              </div>
+            </>
           ) : (
             <div className="space-y-3 border-t border-line pt-4">
               <p className="text-sm text-ink-200">
                 {t(
                   locale,
-                  "Please review the contract and submit your response.",
-                  "يرجى مراجعة العقد وإرسال ردكم.",
+                  "Please review the contract (you can edit it) and submit your response.",
+                  "يرجى مراجعة العقد (يمكنكم تعديله) وإرسال ردكم.",
                 )}
               </p>
-              <ExternalReviewForm token={params.token} locale={locale} />
+              <ExternalReviewForm token={params.token} body={body} locale={locale} />
             </div>
           )}
         </CardContent>

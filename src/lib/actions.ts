@@ -407,6 +407,7 @@ export async function decideApproval(formData: FormData): Promise<void> {
   }
   const req = getRequest(requestId);
   if (!req) return;
+  const decideStatusWasNegotiation = req.status === "NEGOTIATION_REVIEW";
   // Enforce the sequential chain — earlier stages must be approved first.
   ensure(isStageActionable(req.approvals, stage));
   const ap = req.approvals.find((a) => a.stage === stage);
@@ -431,6 +432,20 @@ export async function decideApproval(formData: FormData): Promise<void> {
         comment || "Returned for edit & resubmit",
       );
     }
+  } else if (
+    decideStatusWasNegotiation &&
+    req.approvals.every((a) => a.decision === "APPROVED")
+  ) {
+    // Negotiation re-approval complete — send the contract back to the third
+    // party for another review round.
+    req.status = "THIRD_PARTY_REVIEW";
+    req.thirdPartyReview = undefined;
+    audit(
+      req,
+      "System",
+      "Re-approved internally",
+      "Internal re-approval complete — back to the third party",
+    );
   } else if (req.approvals.every((a) => a.decision === "APPROVED")) {
     req.status = "APPROVED";
     audit(req, "System", "Fully approved", "All approval stages cleared");
@@ -701,35 +716,64 @@ const tpReviewSchema = z.object({
   name: z.string().min(2),
   decision: z.enum(["APPROVED", "CHANGES_REQUESTED"]),
   comment: z.string().optional(),
+  body: z.string().optional(),
 });
 
-/** The external third party submits their review from the public link. */
+/** The external third party submits their review (and edits) from the link. */
 export async function submitThirdPartyReview(formData: FormData): Promise<void> {
-  const { token, name, decision, comment } = tpReviewSchema.parse({
+  const { token, name, decision, comment, body } = tpReviewSchema.parse({
     token: formData.get("token"),
     name: formData.get("name"),
     decision: formData.get("decision"),
     comment: formData.get("comment") ?? "",
+    body: formData.get("body") ?? undefined,
   });
   const req = getRequestByToken(token);
-  if (!req) return;
+  if (!req || !req.draft) return;
+  const actor = `${name} (${req.thirdParty?.company ?? "Third Party"})`;
+
+  // Save the third party's edits to the contract (version-tracked).
+  if (body && body.trim() && body !== req.draft.bodyEn) {
+    req.versions.unshift({
+      version: req.draft.version,
+      bodyEn: req.draft.bodyEn,
+      savedAt: req.draft.updatedAt,
+      savedBy: actor,
+      note: "Edited by third party",
+    });
+    req.draft.bodyEn = body;
+    req.draft.version += 1;
+    req.draft.updatedAt = new Date().toISOString();
+    audit(req, actor, "Contract edited", `Third party edited the contract (v${req.draft.version})`);
+  }
+
   req.thirdPartyReview = {
     name,
     decision,
     comment: comment ?? "",
     reviewedAt: new Date().toISOString(),
   };
-  const actor = `${name} (${req.thirdParty?.company ?? "Third Party"})`;
   audit(req, actor, "Third-party review", `${decision}${comment ? ` — ${comment}` : ""}`);
 
-  // Continue the approval cycle based on the third party's decision.
+  // Negotiation loop.
   if (req.status === "THIRD_PARTY_REVIEW") {
     if (decision === "APPROVED") {
+      // Accepted — resume the cycle where it was paused.
       req.status = req.thirdParty?.resumeStatus ?? "FINAL_CONFIRM";
-      audit(req, "System", "Third party approved", "Contract approved by the third party — cycle resumed");
-    } else {
-      req.status = "CONTRACT_REVISION";
-      audit(req, "System", "Third party requested changes", "Returned to the business user for revision");
+      audit(req, "System", "Third party approved", "Approved by the third party — cycle resumed");
+    } else if (req.classification) {
+      // Changes requested — internal team (Head of BU → CFO → Legal) re-approves.
+      req.approvals = req.classification.routing.map((stage) => ({
+        stage,
+        decision: "PENDING" as ApprovalDecision,
+      }));
+      req.status = "NEGOTIATION_REVIEW";
+      audit(
+        req,
+        "System",
+        "Third party requested changes",
+        `Sent for internal re-approval: ${req.classification.routing.join(" → ")}`,
+      );
     }
   }
   revalidatePath(`/requests/${req.id}`);
