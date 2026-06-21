@@ -8,7 +8,7 @@ import { submitThirdPartyReview } from "@/lib/actions";
 import { t } from "@/lib/i18n";
 import type { Locale } from "@/lib/types";
 import { toast } from "sonner";
-import { Check, RefreshCw } from "lucide-react";
+import { Check } from "lucide-react";
 
 /**
  * The third party reviews and may edit the rich contract document, then
@@ -85,22 +85,13 @@ export function ExternalReviewForm({
           <Check className="h-4 w-4" />
           {t(locale, "Approve", "موافقة")}
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={!ready}
-          onClick={() => submit("CHANGES_REQUESTED")}
-        >
-          <RefreshCw className="h-4 w-4" />
-          {t(locale, "Request changes & send back", "طلب تعديلات وإعادة الإرسال")}
-        </Button>
       </div>
       {!ready && !pending && (
         <p className="text-xs text-amber-400">
           {t(
             locale,
-            "Enter your full name above to enable Approve / Request changes.",
-            "أدخل اسمك الكامل بالأعلى لتفعيل الموافقة / طلب التعديلات.",
+            "Enter your full name above to enable Approve.",
+            "أدخل اسمك الكامل بالأعلى لتفعيل الموافقة.",
           )}
         </p>
       )}
