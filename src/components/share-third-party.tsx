@@ -98,11 +98,19 @@ export function ShareThirdParty({
               {t(locale, "Copy link", "نسخ الرابط")}
             </Button>
           </div>
+          <div className="flex items-center gap-2 rounded-lg border border-line bg-surface-2 px-3 py-2">
+            <span className="text-ink-500">
+              {t(locale, "Access code (OTP)", "رمز الدخول")}:
+            </span>
+            <span className="font-mono text-sm tracking-[0.3em] text-sela-yellow">
+              {share.otp}
+            </span>
+          </div>
           <p className="text-ink-500">
             {t(
               locale,
-              "In production this link is emailed to the third party. They review and respond from the link — no portal login required.",
-              "في النظام الفعلي يُرسل هذا الرابط بالبريد للطرف الخارجي، فيراجع ويرد عبر الرابط دون الحاجة لتسجيل الدخول.",
+              "In production the link + code are emailed to the third party. Here, share the code above so they can open the contract.",
+              "في النظام الفعلي يُرسل الرابط والرمز بالبريد للطرف الخارجي. هنا، شارك الرمز أعلاه ليتمكنوا من فتح العقد.",
             )}
           </p>
 

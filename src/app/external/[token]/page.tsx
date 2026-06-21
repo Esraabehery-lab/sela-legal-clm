@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 import { SelaLogo } from "@/components/sela-logo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ExternalReviewForm } from "@/components/external-review-form";
 import { ExternalSignForm } from "@/components/external-sign-form";
+import { OtpGate } from "@/components/otp-gate";
 import { getRequestByToken } from "@/lib/store";
 import { getLocale } from "@/lib/prefs";
 import { t } from "@/lib/i18n";
@@ -23,6 +25,7 @@ export default function ExternalReviewPage({
 
   const body = locale === "ar" ? req.draft.bodyAr : req.draft.bodyEn;
   const review = req.thirdPartyReview;
+  const verified = cookies().get(`tpok_${params.token}`)?.value === "1";
 
   return (
     <div className="mx-auto min-h-screen max-w-3xl px-4 py-8">
@@ -45,6 +48,10 @@ export default function ExternalReviewPage({
           </p>
         </CardHeader>
         <CardContent className="space-y-5">
+          {!verified ? (
+            <OtpGate token={params.token} locale={locale} />
+          ) : (
+          <>
           <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-ink-400">
             <FileText className="h-3.5 w-3.5" />
             {req.draft.title}
@@ -130,6 +137,8 @@ export default function ExternalReviewPage({
                 {body}
               </div>
             </>
+          )}
+          </>
           )}
         </CardContent>
       </Card>

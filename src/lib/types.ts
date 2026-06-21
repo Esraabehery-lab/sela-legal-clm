@@ -193,6 +193,7 @@ export interface ThirdPartyShare {
   company: string;
   email: string;
   token: string;
+  otp: string;
   sharedAt: string;
   sharedBy: string;
   /** Status to resume to when the third party approves. */

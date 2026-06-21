@@ -688,10 +688,12 @@ export async function shareWithThirdParty(formData: FormData): Promise<void> {
   const req = getRequest(requestId);
   if (!req || !req.draft) return;
   const token = `tp_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
+  const otp = String(Math.floor(100000 + Math.random() * 900000)); // 6-digit
   req.thirdParty = {
     company,
     email,
     token,
+    otp,
     sharedAt: new Date().toISOString(),
     sharedBy: whoami(),
     resumeStatus: req.status, // resume the cycle here when they approve
@@ -702,10 +704,26 @@ export async function shareWithThirdParty(formData: FormData): Promise<void> {
     req,
     whoami(),
     "Shared with third party",
-    `Contract shared with ${company} (${email}) for review`,
+    `Contract shared with ${company} (${email}) — OTP sent`,
   );
+  // No mail service in this demo — log the "email" to the dev console.
+  // eslint-disable-next-line no-console
+  console.log(`[email→${email}] SELA contract access code (OTP): ${otp}`);
   revalidatePath(`/requests/${req.id}`);
   revalidatePath("/dashboard");
+}
+
+/** The third party enters the OTP from their email to unlock the contract. */
+export async function verifyTpOtp(token: string, otp: string): Promise<boolean> {
+  const req = getRequestByToken(token);
+  if (!req?.thirdParty) return false;
+  if (req.thirdParty.otp !== otp.trim()) return false;
+  cookies().set(`tpok_${token}`, "1", {
+    path: "/",
+    maxAge: 60 * 60 * 24,
+  });
+  revalidatePath(`/external/${token}`);
+  return true;
 }
 
 const tpReviewSchema = z.object({
