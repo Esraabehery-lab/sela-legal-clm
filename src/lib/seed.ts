@@ -215,5 +215,60 @@ export function seedRequests(): DFRequest[] {
     auditEntry(18, "Sara Al-Otaibi", "Request created", `${r4.reference} submitted`),
   ];
 
-  return [r1, r2, r3, r4];
+  // 5) Demo: finally approved — awaiting the business user's confirmation
+  const r5 = base(5, {
+    title: "Stadium Catering Operation",
+    description:
+      "Operation of a food & beverage catering space during the season's home matches.",
+    department: "BUSINESS",
+    counterparty: "Pioneer Catering Co.",
+    estimatedValue: 150_000,
+    requesterName: "Sara Al-Otaibi",
+    status: "FINAL_CONFIRM",
+    df: {
+      documentType: "Contract",
+      businessUnit: "Events",
+      contractNature: "Operation",
+      financialType: "Cash-Out",
+      projectName: "Season Catering 2026",
+      location: "Main Stadium",
+      requiredDocs: [
+        "CR",
+        "Bank Account Information",
+        "Signatory Authorization Letter",
+        "Counterparty Offers (Technical + Financial)",
+        "Filled-out Scope of Work",
+      ],
+    },
+  });
+  r5.classification = classify(r5);
+  r5.draft = generateContract(r5);
+  const comp5 = runCompliance(r5);
+  r5.compliance = comp5.findings;
+  r5.riskScore = comp5.riskScore;
+  r5.approvals = r5.classification.routing.map((stage) => ({
+    stage,
+    decision: "APPROVED",
+    reviewer: STAGE_LABELS[stage].en,
+    comment: "Approved.",
+    decidedAt: new Date(Date.now() - 3 * 86_400_000).toISOString(),
+  }));
+  r5.contractReviews = (["PROCUREMENT", "FINANCE", "LEGAL"] as const).map(
+    (stage) => ({
+      stage,
+      decision: "APPROVED",
+      reviewer: STAGE_LABELS[stage].en,
+      comment: "Reviewed.",
+      decidedAt: new Date(Date.now() - 1 * 86_400_000).toISOString(),
+    }),
+  );
+  r5.status = "FINAL_CONFIRM";
+  r5.audit = [
+    auditEntry(1, "Legal Reviewer", "Final approval", "Sent to the user to confirm"),
+    auditEntry(2, "Sara Al-Otaibi", "Revised contract submitted", "Sent for final approval"),
+    auditEntry(3, "AI Engine", "Contract generated", "Operation contract generated"),
+    auditEntry(10, "Sara Al-Otaibi", "Request created", `${r5.reference} submitted`),
+  ];
+
+  return [r1, r2, r3, r4, r5];
 }
