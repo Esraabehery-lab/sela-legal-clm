@@ -12,7 +12,8 @@ import { Save, Pencil } from "lucide-react";
 /**
  * Rich, document-style contract. Renders the HTML body as a paper document
  * (tables, sections). When canEdit, the document is directly editable
- * (contentEditable) and saved as a new version.
+ * (contentEditable) and saved as a new version. The HTML is injected via a ref
+ * so the browser fully owns the editable content (React never re-applies it).
  */
 export function RichContract({
   requestId,
@@ -28,6 +29,14 @@ export function RichContract({
   const ref = React.useRef<HTMLDivElement>(null);
   const [note, setNote] = React.useState("");
   const [pending, start] = React.useTransition();
+
+  // Inject the HTML once (and when the saved version changes) — never during
+  // editing, so the user's keystrokes are not wiped by a re-render.
+  React.useEffect(() => {
+    if (ref.current && ref.current.innerHTML !== html) {
+      ref.current.innerHTML = html;
+    }
+  }, [html]);
 
   function save() {
     const fd = new FormData();
@@ -48,19 +57,18 @@ export function RichContract({
           <Pencil className="h-3.5 w-3.5" />
           {t(
             locale,
-            "Click anywhere in the document to edit it, then Save Version.",
-            "اضغط في أي مكان داخل المستند لتعديله، ثم احفظ النسخة.",
+            "This document is editable — click anywhere inside it and type, then Save Version.",
+            "هذا المستند قابل للتعديل — اضغط بداخله واكتب، ثم احفظ النسخة.",
           )}
         </p>
       )}
       <div
         ref={ref}
         className={`contract-doc max-h-[640px] overflow-auto ${
-          canEdit ? "ring-1 ring-sela-yellow/40" : ""
+          canEdit ? "ring-2 ring-sela-yellow/50" : ""
         }`}
         contentEditable={canEdit}
         suppressContentEditableWarning
-        dangerouslySetInnerHTML={{ __html: html }}
       />
       {canEdit && (
         <div className="flex flex-wrap items-center gap-2">
