@@ -319,7 +319,6 @@ export default function RequestDetailPage({
             <Card>
               <CardHeader className="flex-row items-start justify-between gap-3">
                 <div className="space-y-1.5">
-                <SelaLogo withTagline={false} className="mb-1" />
                 <CardTitle className="flex items-center gap-2 text-base">
                   <FileText className="h-4 w-4 text-sela-yellow" />
                   {t(locale, "AI-Generated Contract", "العقد المُولّد بالذكاء")}
@@ -347,6 +346,14 @@ export default function RequestDetailPage({
                 />
               </CardHeader>
               <CardContent className="space-y-5">
+                {/* Contract letterhead */}
+                <div className="flex items-center justify-between gap-3 rounded-lg border border-line bg-surface-1 px-4 py-3">
+                  <SelaLogo withTagline />
+                  <div className="text-end text-[11px] leading-tight text-ink-500">
+                    <div className="font-medium text-ink-300">{req.reference}</div>
+                    <div>{formatDate(req.createdAt, locale)}</div>
+                  </div>
+                </div>
                 {canConfirm && (
                   <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-sela-mint/30 bg-sela-mint/[0.06] p-4">
                     <p className="text-sm text-ink-200">
