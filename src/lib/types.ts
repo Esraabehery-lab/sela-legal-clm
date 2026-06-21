@@ -34,6 +34,7 @@ export type RequestStatus =
   | "CONTRACT_REVIEW" // contract reviewed by Procurement → Finance → Legal
   | "CONTRACT_REVISION" // back to business user to address review comments
   | "FINAL_APPROVAL" // revised contract awaiting Legal Reviewer's final approval
+  | "THIRD_PARTY_REVIEW" // shared with the external counterparty for review
   | "FINAL_CONFIRM" // finally approved — awaiting the business user's confirmation
   | "USER_SIGNATURE" // awaiting the business user's signature
   | "LEGAL_SIGNATURE" // signed by user, awaiting Legal Reviewer's counter-signature
@@ -193,6 +194,8 @@ export interface ThirdPartyShare {
   token: string;
   sharedAt: string;
   sharedBy: string;
+  /** Status to resume to when the third party approves. */
+  resumeStatus: RequestStatus;
 }
 
 /** The external third party's review response. */

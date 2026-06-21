@@ -682,15 +682,18 @@ export async function shareWithThirdParty(formData: FormData): Promise<void> {
     token,
     sharedAt: new Date().toISOString(),
     sharedBy: whoami(),
+    resumeStatus: req.status, // resume the cycle here when they approve
   };
   req.thirdPartyReview = undefined;
+  req.status = "THIRD_PARTY_REVIEW";
   audit(
     req,
     whoami(),
     "Shared with third party",
-    `Contract shared with ${company} (${email})`,
+    `Contract shared with ${company} (${email}) for review`,
   );
   revalidatePath(`/requests/${req.id}`);
+  revalidatePath("/dashboard");
 }
 
 const tpReviewSchema = z.object({
@@ -716,12 +719,20 @@ export async function submitThirdPartyReview(formData: FormData): Promise<void> 
     comment: comment ?? "",
     reviewedAt: new Date().toISOString(),
   };
-  audit(
-    req,
-    `${name} (${req.thirdParty?.company ?? "Third Party"})`,
-    "Third-party review",
-    `${decision}${comment ? ` — ${comment}` : ""}`,
-  );
+  const actor = `${name} (${req.thirdParty?.company ?? "Third Party"})`;
+  audit(req, actor, "Third-party review", `${decision}${comment ? ` — ${comment}` : ""}`);
+
+  // Continue the approval cycle based on the third party's decision.
+  if (req.status === "THIRD_PARTY_REVIEW") {
+    if (decision === "APPROVED") {
+      req.status = req.thirdParty?.resumeStatus ?? "FINAL_CONFIRM";
+      audit(req, "System", "Third party approved", "Contract approved by the third party — cycle resumed");
+    } else {
+      req.status = "CONTRACT_REVISION";
+      audit(req, "System", "Third party requested changes", "Returned to the business user for revision");
+    }
+  }
   revalidatePath(`/requests/${req.id}`);
+  revalidatePath("/dashboard");
   revalidatePath(`/external/${token}`);
 }

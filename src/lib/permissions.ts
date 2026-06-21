@@ -238,6 +238,7 @@ export function awaitsAction(req: RequestLike, role: Role): boolean {
       req.status === "APPROVED" || // confirm the AI-generated contract
       req.status === "CONTRACT_REVIEW" || // contract under review — can edit
       req.status === "CONTRACT_REVISION" || // address review comments
+      req.status === "THIRD_PARTY_REVIEW" || // shared with the counterparty
       req.status === "FINAL_CONFIRM" || // confirm after final approval
       req.status === "USER_SIGNATURE" // sign the contract in the portal
     );
