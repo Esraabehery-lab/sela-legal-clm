@@ -35,9 +35,9 @@ export type RequestStatus =
   | "CONTRACT_REVISION" // back to business user to address review comments
   | "FINAL_APPROVAL" // revised contract awaiting Legal Reviewer's final approval
   | "THIRD_PARTY_REVIEW" // shared with the external counterparty for review
-  | "NEGOTIATION_REVIEW" // internal re-approval of the third party's changes
   | "FINAL_CONFIRM" // finally approved — awaiting the business user's confirmation
   | "USER_SIGNATURE" // awaiting the business user's signature
+  | "THIRD_PARTY_SIGNATURE" // signed by user — awaiting the third party's signature
   | "LEGAL_SIGNATURE" // signed by user, awaiting Legal Reviewer's counter-signature
   | "REJECTED"
   | "RETURNED" // rejected → returned to business user to edit & resubmit
@@ -238,6 +238,8 @@ export interface DFRequest {
   signedByUserAt?: string;
   signedByLegal?: string;
   signedByLegalAt?: string;
+  signedByThirdParty?: string;
+  signedByThirdPartyAt?: string;
   signedAt?: string; // final execution timestamp
   signedBy?: string;
   // External third-party (counterparty) review via email link.

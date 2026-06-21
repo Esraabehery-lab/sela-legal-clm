@@ -115,9 +115,9 @@ export default function RequestDetailPage({
     req.status === "CONTRACT_REVISION" ||
     req.status === "FINAL_APPROVAL" ||
     req.status === "THIRD_PARTY_REVIEW" ||
-    req.status === "NEGOTIATION_REVIEW" ||
     req.status === "FINAL_CONFIRM" ||
     req.status === "USER_SIGNATURE" ||
+    req.status === "THIRD_PARTY_SIGNATURE" ||
     req.status === "LEGAL_SIGNATURE" ||
     req.status === "SIGNED" ||
     req.status === "ACTIVE";
@@ -448,7 +448,7 @@ export default function RequestDetailPage({
                     locale={locale}
                   />
                 )}
-                {(req.signedByUser || req.signedByLegal) && (
+                {(req.signedByUser || req.signedByLegal || req.signedByThirdParty) && (
                   <div className="space-y-1.5 rounded-lg border border-line bg-surface-1 p-4 text-xs">
                     <div className="font-medium text-ink-200">
                       {t(locale, "Signatures", "التواقيع")}
@@ -459,6 +459,16 @@ export default function RequestDetailPage({
                         {t(locale, "User", "المستخدم")}: {req.signedByUser}
                         {req.signedByUserAt
                           ? ` · ${formatDateTime(req.signedByUserAt, locale)}`
+                          : ""}
+                      </div>
+                    )}
+                    {req.signedByThirdParty && (
+                      <div className="flex items-center gap-2 text-ink-400">
+                        <PenLine className="h-3.5 w-3.5 text-sela-mint" />
+                        {t(locale, "Third Party", "الطرف الخارجي")}:{" "}
+                        {req.signedByThirdParty}
+                        {req.signedByThirdPartyAt
+                          ? ` · ${formatDateTime(req.signedByThirdPartyAt, locale)}`
                           : ""}
                       </div>
                     )}

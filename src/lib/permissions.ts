@@ -212,7 +212,7 @@ function phase1Awaits(req: RequestLike, role: Role): boolean {
   const stage = roleStage(role);
   return (
     !!stage &&
-    (req.status === "IN_APPROVAL" || req.status === "NEGOTIATION_REVIEW") &&
+    req.status === "IN_APPROVAL" &&
     isStageActionable(req.approvals, stage)
   );
 }

@@ -407,7 +407,6 @@ export async function decideApproval(formData: FormData): Promise<void> {
   }
   const req = getRequest(requestId);
   if (!req) return;
-  const decideStatusWasNegotiation = req.status === "NEGOTIATION_REVIEW";
   // Enforce the sequential chain — earlier stages must be approved first.
   ensure(isStageActionable(req.approvals, stage));
   const ap = req.approvals.find((a) => a.stage === stage);
@@ -432,20 +431,6 @@ export async function decideApproval(formData: FormData): Promise<void> {
         comment || "Returned for edit & resubmit",
       );
     }
-  } else if (
-    decideStatusWasNegotiation &&
-    req.approvals.every((a) => a.decision === "APPROVED")
-  ) {
-    // Negotiation re-approval complete — send the contract back to the third
-    // party for another review round.
-    req.status = "THIRD_PARTY_REVIEW";
-    req.thirdPartyReview = undefined;
-    audit(
-      req,
-      "System",
-      "Re-approved internally",
-      "Internal re-approval complete — back to the third party",
-    );
   } else if (req.approvals.every((a) => a.decision === "APPROVED")) {
     req.status = "APPROVED";
     audit(req, "System", "Fully approved", "All approval stages cleared");
@@ -605,13 +590,25 @@ export async function signByUser(formData: FormData): Promise<void> {
   ensure(canSignByUser(getRole(), req.status));
   req.signedByUser = signerName;
   req.signedByUserAt = new Date().toISOString();
-  req.status = "LEGAL_SIGNATURE";
-  audit(
-    req,
-    signerName,
-    "Signed by user",
-    "Contract signed by the user — sent to Legal Reviewer to counter-sign",
-  );
+  if (req.thirdParty) {
+    // Send the signed contract back to the third party to counter-sign.
+    req.thirdPartyReview = undefined;
+    req.status = "THIRD_PARTY_SIGNATURE";
+    audit(
+      req,
+      signerName,
+      "Signed by user",
+      `Signed by the user — sent to ${req.thirdParty.company} to sign`,
+    );
+  } else {
+    req.status = "LEGAL_SIGNATURE";
+    audit(
+      req,
+      signerName,
+      "Signed by user",
+      "Contract signed by the user — sent to Legal Reviewer to counter-sign",
+    );
+  }
   revalidatePath(`/requests/${req.id}`);
   revalidatePath("/dashboard");
 }
@@ -755,27 +752,45 @@ export async function submitThirdPartyReview(formData: FormData): Promise<void> 
   };
   audit(req, actor, "Third-party review", `${decision}${comment ? ` — ${comment}` : ""}`);
 
-  // Negotiation loop.
   if (req.status === "THIRD_PARTY_REVIEW") {
     if (decision === "APPROVED") {
-      // Accepted — resume the cycle where it was paused.
-      req.status = req.thirdParty?.resumeStatus ?? "FINAL_CONFIRM";
-      audit(req, "System", "Third party approved", "Approved by the third party — cycle resumed");
-    } else if (req.classification) {
-      // Changes requested — internal team (Head of BU → CFO → Legal) re-approves.
-      req.approvals = req.classification.routing.map((stage) => ({
-        stage,
-        decision: "PENDING" as ApprovalDecision,
-      }));
-      req.status = "NEGOTIATION_REVIEW";
-      audit(
-        req,
-        "System",
-        "Third party requested changes",
-        `Sent for internal re-approval: ${req.classification.routing.join(" → ")}`,
-      );
+      // Third party confirmed — back to the business user to sign.
+      req.status = "USER_SIGNATURE";
+      audit(req, "System", "Third party confirmed", "Confirmed by the third party — sent to the user to sign");
+    } else {
+      // Changes requested — back to the business user to revise.
+      req.status = "CONTRACT_REVISION";
+      audit(req, "System", "Third party requested changes", "Returned to the business user to revise");
     }
   }
+  revalidatePath(`/requests/${req.id}`);
+  revalidatePath("/dashboard");
+  revalidatePath(`/external/${token}`);
+}
+
+/** The third party signs the contract from the external link (final step). */
+export async function signByThirdParty(formData: FormData): Promise<void> {
+  const token = String(formData.get("token") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  if (name.length < 2) throw new Error("A signer name is required.");
+  const req = getRequestByToken(token);
+  if (!req || req.status !== "THIRD_PARTY_SIGNATURE") return;
+  const now = new Date().toISOString();
+  req.signedByThirdParty = `${name} (${req.thirdParty?.company ?? "Third Party"})`;
+  req.signedByThirdPartyAt = now;
+  req.signedAt = now;
+  req.signedBy = req.signedByThirdParty;
+  req.status = "SIGNED";
+  audit(req, req.signedByThirdParty, "Signed by third party", "Counter-signed — execution complete");
+
+  req.obligations = extractObligations(req);
+  req.status = "ACTIVE";
+  audit(
+    req,
+    "AI Engine",
+    "Obligations extracted",
+    `${req.obligations.length} obligations assigned to departments`,
+  );
   revalidatePath(`/requests/${req.id}`);
   revalidatePath("/dashboard");
   revalidatePath(`/external/${token}`);

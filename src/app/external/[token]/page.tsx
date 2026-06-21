@@ -3,6 +3,7 @@ import { SelaLogo } from "@/components/sela-logo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ExternalReviewForm } from "@/components/external-review-form";
+import { ExternalSignForm } from "@/components/external-sign-form";
 import { getRequestByToken } from "@/lib/store";
 import { getLocale } from "@/lib/prefs";
 import { t } from "@/lib/i18n";
@@ -49,30 +50,7 @@ export default function ExternalReviewPage({
             {req.draft.title}
           </div>
 
-          {review ? (
-            <>
-              <div className="flex items-start gap-2.5 rounded-lg border border-sela-mint/30 bg-sela-mint/[0.06] p-4 text-sm">
-                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-sela-mint" />
-                <div>
-                  <div className="font-medium text-ink-100">
-                    {t(locale, "Your response was submitted", "تم إرسال ردكم")} —{" "}
-                    {review.decision === "APPROVED"
-                      ? t(locale, "Approved", "موافقة")
-                      : t(locale, "Changes requested", "طلب تعديلات")}
-                  </div>
-                  <div className="text-xs text-ink-400">
-                    {review.name} · {formatDateTime(review.reviewedAt, locale)}
-                  </div>
-                  {review.comment && (
-                    <p className="mt-1 text-xs text-ink-300">“{review.comment}”</p>
-                  )}
-                </div>
-              </div>
-              <div className="max-h-[520px] overflow-auto whitespace-pre-wrap rounded-lg border border-line bg-surface-1 p-4 font-mono text-[13px] leading-relaxed text-ink-200">
-                {body}
-              </div>
-            </>
-          ) : (
+          {req.status === "THIRD_PARTY_REVIEW" ? (
             <div className="space-y-3 border-t border-line pt-4">
               <p className="text-sm text-ink-200">
                 {t(
@@ -83,6 +61,33 @@ export default function ExternalReviewPage({
               </p>
               <ExternalReviewForm token={params.token} body={body} locale={locale} />
             </div>
+          ) : req.status === "THIRD_PARTY_SIGNATURE" ? (
+            <div className="space-y-3 border-t border-line pt-4">
+              <div className="max-h-[420px] overflow-auto whitespace-pre-wrap rounded-lg border border-line bg-surface-1 p-4 font-mono text-[13px] leading-relaxed text-ink-200">
+                {body}
+              </div>
+              <ExternalSignForm token={params.token} locale={locale} />
+            </div>
+          ) : (
+            <>
+              <div className="flex items-start gap-2.5 rounded-lg border border-sela-mint/30 bg-sela-mint/[0.06] p-4 text-sm">
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-sela-mint" />
+                <div className="font-medium text-ink-100">
+                  {req.signedByThirdParty
+                    ? t(locale, "Contract signed. Thank you.", "تم توقيع العقد. شكراً لكم.")
+                    : t(locale, "Your response was submitted.", "تم إرسال ردكم.")}
+                  {review && !req.signedByThirdParty && (
+                    <span className="text-ink-400">
+                      {" "}
+                      — {review.name} · {formatDateTime(review.reviewedAt, locale)}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="max-h-[520px] overflow-auto whitespace-pre-wrap rounded-lg border border-line bg-surface-1 p-4 font-mono text-[13px] leading-relaxed text-ink-200">
+                {body}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
