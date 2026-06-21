@@ -63,6 +63,26 @@ export default function ExternalReviewPage({
             </div>
           ) : req.status === "THIRD_PARTY_SIGNATURE" ? (
             <div className="space-y-3 border-t border-line pt-4">
+              <div className="flex items-start gap-2.5 rounded-lg border border-sela-mint/30 bg-sela-mint/[0.06] p-4 text-sm">
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-sela-mint" />
+                <div className="text-ink-200">
+                  <div className="font-medium text-ink-100">
+                    {t(
+                      locale,
+                      "SELA has approved and signed the contract.",
+                      "اعتمدت صلة العقد ووقّعته.",
+                    )}
+                  </div>
+                  {req.signedByUser && (
+                    <div className="text-xs text-ink-400">
+                      {req.signedByUser}
+                      {req.signedByUserAt
+                        ? ` · ${formatDateTime(req.signedByUserAt, locale)}`
+                        : ""}
+                    </div>
+                  )}
+                </div>
+              </div>
               <div className="max-h-[420px] overflow-auto whitespace-pre-wrap rounded-lg border border-line bg-surface-1 p-4 font-mono text-[13px] leading-relaxed text-ink-200">
                 {body}
               </div>
@@ -72,15 +92,37 @@ export default function ExternalReviewPage({
             <>
               <div className="flex items-start gap-2.5 rounded-lg border border-sela-mint/30 bg-sela-mint/[0.06] p-4 text-sm">
                 <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-sela-mint" />
-                <div className="font-medium text-ink-100">
-                  {req.signedByThirdParty
-                    ? t(locale, "Contract signed. Thank you.", "تم توقيع العقد. شكراً لكم.")
-                    : t(locale, "Your response was submitted.", "تم إرسال ردكم.")}
-                  {review && !req.signedByThirdParty && (
-                    <span className="text-ink-400">
-                      {" "}
-                      — {review.name} · {formatDateTime(review.reviewedAt, locale)}
-                    </span>
+                <div className="text-ink-200">
+                  <div className="font-medium text-ink-100">
+                    {req.signedByThirdParty
+                      ? t(locale, "Contract signed. Thank you.", "تم توقيع العقد. شكراً لكم.")
+                      : req.status === "USER_SIGNATURE"
+                        ? t(
+                            locale,
+                            "Your response was submitted — awaiting SELA's review and signature.",
+                            "تم إرسال ردكم — بانتظار مراجعة وتوقيع صلة.",
+                          )
+                        : t(locale, "Your response was submitted.", "تم إرسال ردكم.")}
+                  </div>
+                  {/* Signatures recorded so far */}
+                  {req.signedByUser && (
+                    <div className="text-xs text-ink-400">
+                      {t(locale, "Signed by SELA", "موقّع من صلة")}: {req.signedByUser}
+                      {req.signedByUserAt ? ` · ${formatDateTime(req.signedByUserAt, locale)}` : ""}
+                    </div>
+                  )}
+                  {req.signedByThirdParty && (
+                    <div className="text-xs text-ink-400">
+                      {t(locale, "Signed by you", "موقّع منكم")}: {req.signedByThirdParty}
+                      {req.signedByThirdPartyAt
+                        ? ` · ${formatDateTime(req.signedByThirdPartyAt, locale)}`
+                        : ""}
+                    </div>
+                  )}
+                  {review && !req.signedByThirdParty && !req.signedByUser && (
+                    <div className="text-xs text-ink-400">
+                      {review.name} · {formatDateTime(review.reviewedAt, locale)}
+                    </div>
                   )}
                 </div>
               </div>
