@@ -492,9 +492,6 @@ export async function reviewContract(formData: FormData): Promise<void> {
     comment: formData.get("comment") ?? "",
   });
   ensure(canApproveStage(getRole(), stage));
-  if (!comment?.trim()) {
-    throw new Error("A comment is required for every contract review.");
-  }
   const req = getRequest(requestId);
   if (!req) return;
   ensure(isStageActionable(req.contractReviews, stage));
