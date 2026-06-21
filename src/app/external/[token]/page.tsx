@@ -104,14 +104,28 @@ export default function ExternalReviewPage({
                   <div className="font-medium text-ink-100">
                     {req.signedByThirdParty
                       ? t(locale, "Contract signed. Thank you.", "تم توقيع العقد. شكراً لكم.")
-                      : req.status === "USER_SIGNATURE"
+                      : req.finalConfirmedBy
                         ? t(
                             locale,
-                            "Your response was submitted — awaiting SELA's review and signature.",
-                            "تم إرسال ردكم — بانتظار مراجعة وتوقيع صلة.",
+                            "SELA has reviewed and confirmed the contract following your approval. Thank you.",
+                            "راجعت صلة العقد وأكدته بعد موافقتكم. شكراً لكم.",
                           )
-                        : t(locale, "Your response was submitted.", "تم إرسال ردكم.")}
+                        : req.status === "THIRD_PARTY_APPROVED"
+                          ? t(
+                              locale,
+                              "Your approval was submitted — awaiting SELA's final confirmation.",
+                              "تم إرسال موافقتكم — بانتظار التأكيد النهائي من صلة.",
+                            )
+                          : t(locale, "Your response was submitted.", "تم إرسال ردكم.")}
                   </div>
+                  {req.finalConfirmedBy && (
+                    <div className="text-xs text-ink-400">
+                      {t(locale, "Confirmed by SELA", "مؤكَّد من صلة")}: {req.finalConfirmedBy}
+                      {req.finalConfirmedAt
+                        ? ` · ${formatDateTime(req.finalConfirmedAt, locale)}`
+                        : ""}
+                    </div>
+                  )}
                   {/* Signatures recorded so far */}
                   {req.signedByUser && (
                     <div className="text-xs text-ink-400">

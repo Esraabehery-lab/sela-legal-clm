@@ -815,6 +815,8 @@ export async function confirmAfterThirdParty(requestId: string): Promise<void> {
   const req = getRequest(requestId);
   if (!req) return;
   ensure(canConfirmAfterThirdParty(getRole(), req.status));
+  req.finalConfirmedBy = whoami();
+  req.finalConfirmedAt = new Date().toISOString();
   // Resume the cycle where it was paused before sharing.
   req.status = req.thirdParty?.resumeStatus ?? "USER_SIGNATURE";
   audit(
@@ -825,6 +827,7 @@ export async function confirmAfterThirdParty(requestId: string): Promise<void> {
   );
   revalidatePath(`/requests/${req.id}`);
   revalidatePath("/dashboard");
+  if (req.thirdParty) revalidatePath(`/external/${req.thirdParty.token}`);
 }
 
 /** The third party signs the contract from the external link (final step). */

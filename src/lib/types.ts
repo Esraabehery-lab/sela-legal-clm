@@ -249,5 +249,8 @@ export interface DFRequest {
   // External third-party (counterparty) review via email link.
   thirdParty?: ThirdPartyShare;
   thirdPartyReview?: ThirdPartyReview;
+  /** Business user's final confirmation after the third party approved. */
+  finalConfirmedBy?: string;
+  finalConfirmedAt?: string;
   audit: AuditEntry[];
 }
