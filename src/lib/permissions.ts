@@ -16,29 +16,30 @@ export function canRunAi(role: Role): boolean {
   return role === "BUSINESS_USER" || role === "LEGAL_OPS";
 }
 
+// Once signing/execution starts (or the request is closed) the contract is
+// locked and can no longer be edited.
+const EDIT_LOCKED_STATUSES: RequestStatus[] = [
+  "USER_SIGNATURE",
+  "THIRD_PARTY_SIGNATURE",
+  "LEGAL_SIGNATURE",
+  "SIGNED",
+  "ACTIVE",
+  "REJECTED",
+  "ARCHIVED",
+];
+
 export function canEditDraft(role: Role, status?: RequestStatus): boolean {
-  const businessEditor = role === "BUSINESS_USER" || role === "LEGAL_OPS";
-  // Procurement / Finance / Legal teams can change the contract during review.
-  const reviewEditor =
-    role === "PROCUREMENT" || role === "FINANCE" || role === "LEGAL";
-  if (!businessEditor && !reviewEditor) return false;
-  if (!status) return true;
-
-  if (
-    businessEditor &&
-    (status === "DRAFT_GENERATED" ||
-      status === "BU_REVIEW" ||
-      status === "APPROVED" ||
-      status === "CONTRACT_REVIEW" ||
-      status === "CONTRACT_REVISION")
-  )
-    return true;
-
-  // Review teams edit the contract while it is in contract review.
-  if (reviewEditor && status === "CONTRACT_REVIEW") return true;
-  // Legal can also edit during their final approval.
-  if (role === "LEGAL" && status === "FINAL_APPROVAL") return true;
-
+  // Business user / Legal Ops can edit the contract anytime before signing.
+  if (role === "BUSINESS_USER" || role === "LEGAL_OPS") {
+    if (!status) return true;
+    return !EDIT_LOCKED_STATUSES.includes(status);
+  }
+  // Procurement / Finance teams edit the contract during contract review.
+  if (role === "PROCUREMENT" || role === "FINANCE")
+    return status === "CONTRACT_REVIEW";
+  // Legal edits during contract review and their final approval.
+  if (role === "LEGAL")
+    return status === "CONTRACT_REVIEW" || status === "FINAL_APPROVAL";
   return false;
 }
 
