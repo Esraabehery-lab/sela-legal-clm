@@ -197,6 +197,8 @@ export interface ThirdPartyShare {
   email: string;
   token: string;
   otp: string;
+  /** Whether the email was actually delivered via SMTP. */
+  emailed?: boolean;
   sharedAt: string;
   sharedBy: string;
   /** Status to resume to when the third party approves. */

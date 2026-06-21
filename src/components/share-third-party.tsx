@@ -125,13 +125,24 @@ export function ShareThirdParty({
               {share.otp}
             </span>
           </div>
-          <p className="text-ink-500">
-            {t(
-              locale,
-              "In production the link + code are emailed to the third party. Here, share the code above so they can open the contract.",
-              "في النظام الفعلي يُرسل الرابط والرمز بالبريد للطرف الخارجي. هنا، شارك الرمز أعلاه ليتمكنوا من فتح العقد.",
-            )}
-          </p>
+          {share.emailed ? (
+            <p className="flex items-center gap-1.5 text-sela-mint">
+              <Check className="h-3.5 w-3.5" />
+              {t(
+                locale,
+                `The contract link + access code were emailed to ${share.email}.`,
+                `تم إرسال رابط العقد ورمز الدخول إلى ${share.email}.`,
+              )}
+            </p>
+          ) : (
+            <p className="text-ink-500">
+              {t(
+                locale,
+                "Email auto-send isn't configured (set SMTP_* env vars). Meanwhile use “Email to third party”, or share the link + code above.",
+                "الإرسال التلقائي بالبريد غير مُفعّل (اضبط متغيرات SMTP). يمكنك استخدام «إرسال بالبريد» أو مشاركة الرابط والرمز أعلاه.",
+              )}
+            </p>
+          )}
 
           {review ? (
             <div className="mt-2 rounded-lg border border-line bg-surface-2 p-3">

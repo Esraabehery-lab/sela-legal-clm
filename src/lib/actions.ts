@@ -3,8 +3,9 @@
 // Server actions = the write side of the CLM. Each mutation updates the
 // in-memory store, records an audit entry (US-018), then revalidates.
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { sendShareEmail } from "./email";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import type {
@@ -712,11 +713,23 @@ export async function shareWithThirdParty(formData: FormData): Promise<void> {
   if (!req || !req.draft) return;
   const token = `tp_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
   const otp = String(Math.floor(100000 + Math.random() * 900000)); // 6-digit
+
+  // Build the external link from the incoming request host.
+  const h = headers();
+  const host = h.get("host") ?? "localhost:3002";
+  const proto =
+    h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  const link = `${proto}://${host}/external/${token}`;
+
+  // Send the email (SMTP) — falls back to console log if SMTP isn't configured.
+  const emailed = await sendShareEmail({ to: email, company, link, otp });
+
   req.thirdParty = {
     company,
     email,
     token,
     otp,
+    emailed,
     sharedAt: new Date().toISOString(),
     sharedBy: whoami(),
     resumeStatus: req.status, // resume the cycle here when they approve
@@ -727,11 +740,10 @@ export async function shareWithThirdParty(formData: FormData): Promise<void> {
     req,
     whoami(),
     "Shared with third party",
-    `Contract shared with ${company} (${email}) — OTP sent`,
+    emailed
+      ? `Contract emailed to ${company} (${email})`
+      : `Shared with ${company} (${email}) — configure SMTP to auto-send`,
   );
-  // No mail service in this demo — log the "email" to the dev console.
-  // eslint-disable-next-line no-console
-  console.log(`[email→${email}] SELA contract access code (OTP): ${otp}`);
   revalidatePath(`/requests/${req.id}`);
   revalidatePath("/dashboard");
 }
