@@ -142,6 +142,9 @@
     font-size: 14px; font-weight: 700; color: #b3151c;
     border-bottom: 1px solid #ddd; padding-bottom: 4px; margin: 20px 0 10px;
   }
+  .contract-doc .ct-h3 {
+    font-size: 13px; font-weight: 700; color: #1a1a1a; margin: 16px 0 6px;
+  }
   .contract-doc table.ct-table {
     width: 100%; border-collapse: collapse; margin: 8px 0 14px; font-size: 12.5px;
   }
