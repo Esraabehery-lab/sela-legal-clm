@@ -28,6 +28,7 @@ const STATUS_VARIANT: Record<RequestStatus, Variant> = {
   CONTRACT_REVISION: "amber",
   FINAL_APPROVAL: "amber",
   THIRD_PARTY_REVIEW: "yellow",
+  THIRD_PARTY_APPROVED: "mint",
   FINAL_CONFIRM: "amber",
   USER_SIGNATURE: "amber",
   THIRD_PARTY_SIGNATURE: "amber",

@@ -4,23 +4,25 @@ import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { shareWithThirdParty } from "@/lib/actions";
+import { shareWithThirdParty, confirmAfterThirdParty } from "@/lib/actions";
 import { t } from "@/lib/i18n";
 import { formatDateTime } from "@/lib/format";
 import type { Locale, ThirdPartyShare, ThirdPartyReview } from "@/lib/types";
 import { toast } from "sonner";
-import { Mail, Copy, Check } from "lucide-react";
+import { Mail, Copy, Check, CheckCircle2 } from "lucide-react";
 
 /** Business user shares the contract with an external company via an email link. */
 export function ShareThirdParty({
   requestId,
   share,
   review,
+  canFinalConfirm,
   locale,
 }: {
   requestId: string;
   share?: ThirdPartyShare;
   review?: ThirdPartyReview;
+  canFinalConfirm?: boolean;
   locale: Locale;
 }) {
   const [pending, start] = React.useTransition();
@@ -131,6 +133,36 @@ export function ShareThirdParty({
               </div>
               {review.comment && (
                 <p className="mt-1 text-ink-300">“{review.comment}”</p>
+              )}
+
+              {/* Final confirmation prompt for the business user */}
+              {canFinalConfirm && review.decision === "APPROVED" && (
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-sela-mint/40 bg-sela-mint/[0.08] p-3">
+                  <p className="text-sm text-ink-200">
+                    {t(
+                      locale,
+                      `${share.company} approved the contract. Please add your final confirmation.`,
+                      `وافق ${share.company} على العقد. يرجى إضافة تأكيدك النهائي.`,
+                    )}
+                  </p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="mint"
+                    disabled={pending}
+                    onClick={() =>
+                      start(async () => {
+                        await confirmAfterThirdParty(requestId);
+                        toast.success(
+                          t(locale, "Final confirmation added", "تمت إضافة التأكيد النهائي"),
+                        );
+                      })
+                    }
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    {t(locale, "Final Confirmation", "التأكيد النهائي")}
+                  </Button>
+                </div>
               )}
             </div>
           ) : (

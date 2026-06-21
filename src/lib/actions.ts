@@ -44,6 +44,7 @@ import {
   canSignByUser,
   canSignByLegal,
   canShareThirdParty,
+  canConfirmAfterThirdParty,
   canUploadDocuments,
   canRunAi,
   canEditDraft,
@@ -795,9 +796,9 @@ export async function submitThirdPartyReview(formData: FormData): Promise<void> 
 
   if (req.status === "THIRD_PARTY_REVIEW") {
     if (decision === "APPROVED") {
-      // Third party confirmed — back to the business user to sign.
-      req.status = "USER_SIGNATURE";
-      audit(req, "System", "Third party confirmed", "Confirmed by the third party — sent to the user to sign");
+      // Third party approved — back to the business user for final confirmation.
+      req.status = "THIRD_PARTY_APPROVED";
+      audit(req, "System", "Third party approved", "Approved by the third party — awaiting the business user's final confirmation");
     } else {
       // Changes requested — back to the business user to revise.
       req.status = "CONTRACT_REVISION";
@@ -807,6 +808,23 @@ export async function submitThirdPartyReview(formData: FormData): Promise<void> 
   revalidatePath(`/requests/${req.id}`);
   revalidatePath("/dashboard");
   revalidatePath(`/external/${token}`);
+}
+
+/** Business user's final confirmation after the third party approved. */
+export async function confirmAfterThirdParty(requestId: string): Promise<void> {
+  const req = getRequest(requestId);
+  if (!req) return;
+  ensure(canConfirmAfterThirdParty(getRole(), req.status));
+  // Resume the cycle where it was paused before sharing.
+  req.status = req.thirdParty?.resumeStatus ?? "USER_SIGNATURE";
+  audit(
+    req,
+    whoami(),
+    "Final confirmation",
+    "Business user confirmed after the third party's approval — cycle resumed",
+  );
+  revalidatePath(`/requests/${req.id}`);
+  revalidatePath("/dashboard");
 }
 
 /** The third party signs the contract from the external link (final step). */

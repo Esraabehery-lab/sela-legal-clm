@@ -35,6 +35,7 @@ export type RequestStatus =
   | "CONTRACT_REVISION" // back to business user to address review comments
   | "FINAL_APPROVAL" // revised contract awaiting Legal Reviewer's final approval
   | "THIRD_PARTY_REVIEW" // shared with the external counterparty for review
+  | "THIRD_PARTY_APPROVED" // third party approved — awaiting business user's final confirmation
   | "FINAL_CONFIRM" // finally approved — awaiting the business user's confirmation
   | "USER_SIGNATURE" // awaiting the business user's signature
   | "THIRD_PARTY_SIGNATURE" // signed by user — awaiting the third party's signature

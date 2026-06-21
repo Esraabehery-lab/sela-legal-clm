@@ -56,6 +56,7 @@ import {
   canSignByUser,
   canSignByLegal,
   canShareThirdParty,
+  canConfirmAfterThirdParty,
   canManageObligations as canManageObligationsFn,
   canUploadDocuments,
   canRunAi,
@@ -115,6 +116,7 @@ export default function RequestDetailPage({
     req.status === "CONTRACT_REVISION" ||
     req.status === "FINAL_APPROVAL" ||
     req.status === "THIRD_PARTY_REVIEW" ||
+    req.status === "THIRD_PARTY_APPROVED" ||
     req.status === "FINAL_CONFIRM" ||
     req.status === "USER_SIGNATURE" ||
     req.status === "THIRD_PARTY_SIGNATURE" ||
@@ -367,6 +369,7 @@ export default function RequestDetailPage({
                     requestId={req.id}
                     share={req.thirdParty}
                     review={req.thirdPartyReview}
+                    canFinalConfirm={canConfirmAfterThirdParty(role, req.status)}
                     locale={locale}
                   />
                 )}

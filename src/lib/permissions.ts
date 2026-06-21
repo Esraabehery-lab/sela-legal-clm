@@ -114,6 +114,17 @@ export function canShareThirdParty(role: Role): boolean {
   return role === "BUSINESS_USER" || role === "LEGAL_OPS";
 }
 
+/** Business user's final confirmation after the third party approved. */
+export function canConfirmAfterThirdParty(
+  role: Role,
+  status: RequestStatus,
+): boolean {
+  return (
+    (role === "BUSINESS_USER" || role === "LEGAL_OPS") &&
+    status === "THIRD_PARTY_APPROVED"
+  );
+}
+
 /** The contract-review stage a reviewer role owns (Procurement/Finance/Legal). */
 export function contractReviewStage(role: Role): ApprovalStage | null {
   if (role === "PROCUREMENT" || role === "FINANCE" || role === "LEGAL")
@@ -232,7 +243,7 @@ export function awaitsAction(req: RequestLike, role: Role): boolean {
       req.status === "APPROVED" || // confirm the AI-generated contract
       req.status === "CONTRACT_REVIEW" || // contract under review — can edit
       req.status === "CONTRACT_REVISION" || // address review comments
-      req.status === "THIRD_PARTY_REVIEW" || // shared with the counterparty
+      req.status === "THIRD_PARTY_APPROVED" || // final confirmation after third party
       req.status === "FINAL_CONFIRM" || // confirm after final approval
       req.status === "USER_SIGNATURE" // sign the contract in the portal
     );

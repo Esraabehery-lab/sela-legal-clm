@@ -42,6 +42,7 @@ export const STATUS_LABELS: Record<RequestStatus, Pair> = {
   CONTRACT_REVISION: { en: "Contract Revision", ar: "تعديل العقد" },
   FINAL_APPROVAL: { en: "Final Approval", ar: "الاعتماد النهائي" },
   THIRD_PARTY_REVIEW: { en: "With Third Party", ar: "لدى الطرف الخارجي" },
+  THIRD_PARTY_APPROVED: { en: "Third-Party Approved", ar: "وافق الطرف الخارجي" },
   FINAL_CONFIRM: { en: "Final Confirmation", ar: "التأكيد النهائي" },
   USER_SIGNATURE: { en: "Awaiting Your Signature", ar: "بانتظار توقيعك" },
   THIRD_PARTY_SIGNATURE: { en: "Awaiting Third-Party Signature", ar: "بانتظار توقيع الطرف الخارجي" },
