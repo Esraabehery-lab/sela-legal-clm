@@ -40,6 +40,19 @@ export function ShareThirdParty({
     setTimeout(() => setCopied(false), 2000);
   }
 
+  function emailIt() {
+    if (!share) return;
+    const subject = encodeURIComponent("SELA — Contract for your review");
+    const body = encodeURIComponent(
+      `Dear ${share.company},\n\n` +
+        `SELA has shared a contract for your review.\n\n` +
+        `Open the contract here:\n${link}\n\n` +
+        `Your 6-digit access code (OTP): ${share.otp}\n\n` +
+        `Best regards,\nSELA`,
+    );
+    window.location.href = `mailto:${share.email}?subject=${subject}&body=${body}`;
+  }
+
   return (
     <div className="space-y-3 rounded-lg border border-line bg-surface-1 p-4">
       <div className="flex items-center gap-2 text-sm font-medium text-ink-100">
@@ -93,11 +106,15 @@ export function ShareThirdParty({
               · {formatDateTime(share.sharedAt, locale)}
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Input readOnly value={link} className="h-8 text-[11px]" />
             <Button type="button" size="sm" variant="outline" onClick={copy}>
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               {t(locale, "Copy link", "نسخ الرابط")}
+            </Button>
+            <Button type="button" size="sm" onClick={emailIt}>
+              <Mail className="h-4 w-4" />
+              {t(locale, "Email to third party", "إرسال بالبريد")}
             </Button>
           </div>
           <div className="flex items-center gap-2 rounded-lg border border-line bg-surface-2 px-3 py-2">
