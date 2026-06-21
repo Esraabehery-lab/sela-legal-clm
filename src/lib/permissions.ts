@@ -115,6 +115,11 @@ export function canManageObligations(role: Role): boolean {
   return role === "CONTRACT_OWNER" || role === "LEGAL_OPS";
 }
 
+/** The business user can share the contract with an external third party. */
+export function canShareThirdParty(role: Role): boolean {
+  return role === "BUSINESS_USER" || role === "LEGAL_OPS";
+}
+
 /** The contract-review stage a reviewer role owns (Procurement/Finance/Legal). */
 export function contractReviewStage(role: Role): ApprovalStage | null {
   if (role === "PROCUREMENT" || role === "FINANCE" || role === "LEGAL")

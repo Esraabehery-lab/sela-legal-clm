@@ -35,6 +35,11 @@ export function getRequest(id: string): DFRequest | undefined {
   return db.requests.find((r) => r.id === id || r.reference === id);
 }
 
+/** Look up a request by its third-party share token (external review page). */
+export function getRequestByToken(token: string): DFRequest | undefined {
+  return db.requests.find((r) => r.thirdParty?.token === token);
+}
+
 export function addRequest(req: DFRequest): void {
   db.requests.push(req);
 }

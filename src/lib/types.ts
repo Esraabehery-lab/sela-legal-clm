@@ -186,6 +186,23 @@ export interface AuditEntry {
   detail: string;
 }
 
+/** Contract shared with an external company (the counterparty) via email link. */
+export interface ThirdPartyShare {
+  company: string;
+  email: string;
+  token: string;
+  sharedAt: string;
+  sharedBy: string;
+}
+
+/** The external third party's review response. */
+export interface ThirdPartyReview {
+  name: string;
+  decision: "APPROVED" | "CHANGES_REQUESTED";
+  comment: string;
+  reviewedAt: string;
+}
+
 export interface DFRequest {
   id: string;
   reference: string; // e.g. DF-2026-0001
@@ -219,5 +236,8 @@ export interface DFRequest {
   signedByLegalAt?: string;
   signedAt?: string; // final execution timestamp
   signedBy?: string;
+  // External third-party (counterparty) review via email link.
+  thirdParty?: ThirdPartyShare;
+  thirdPartyReview?: ThirdPartyReview;
   audit: AuditEntry[];
 }

@@ -47,6 +47,7 @@ import { ApprovalProgress } from "@/components/approval-progress";
 import { DownloadContractPdf } from "@/components/download-contract-pdf";
 import { ContractReviewActions } from "@/components/contract-review-actions";
 import { SignContract } from "@/components/sign-contract";
+import { ShareThirdParty } from "@/components/share-third-party";
 import { SelaLogo } from "@/components/sela-logo";
 import {
   canApproveStage,
@@ -54,6 +55,7 @@ import {
   canSubmitForApproval,
   canSignByUser,
   canSignByLegal,
+  canShareThirdParty,
   canManageObligations as canManageObligationsFn,
   canUploadDocuments,
   canRunAi,
@@ -129,6 +131,7 @@ export default function RequestDetailPage({
   const canRevise = canSubmitRevision(role, req.status);
   const canFinalApproveNow = canFinalApprove(role, req.status);
   const canConfirmFinalNow = canConfirmFinal(role, req.status);
+  const canShare = canShareThirdParty(role);
 
   // In focused review, show only the reviewer's own approval row (not the
   // whole chain). Everyone else sees the full chain.
@@ -358,6 +361,14 @@ export default function RequestDetailPage({
                     <div>{formatDate(req.createdAt, locale)}</div>
                   </div>
                 </div>
+                {(canShare || req.thirdParty) && (
+                  <ShareThirdParty
+                    requestId={req.id}
+                    share={req.thirdParty}
+                    review={req.thirdPartyReview}
+                    locale={locale}
+                  />
+                )}
                 {canConfirm && (
                   <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-sela-mint/30 bg-sela-mint/[0.06] p-4">
                     <p className="text-sm text-ink-200">

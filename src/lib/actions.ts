@@ -22,6 +22,7 @@ import {
   addRequest,
   audit,
   getRequest,
+  getRequestByToken,
   nextReference,
 } from "./store";
 import {
@@ -42,6 +43,7 @@ import {
   canConfirmFinal,
   canSignByUser,
   canSignByLegal,
+  canShareThirdParty,
   canUploadDocuments,
   canRunAi,
   canEditDraft,
@@ -651,4 +653,75 @@ export async function updateObligation(formData: FormData): Promise<void> {
   audit(req, whoami(), "Obligation updated", `${ob.title} → ${status}`);
   revalidatePath(`/requests/${req.id}`);
   revalidatePath("/obligations");
+}
+
+// ============================================================
+// External third-party (counterparty) review via email link
+// ============================================================
+
+const shareSchema = z.object({
+  requestId: z.string(),
+  company: z.string().min(2),
+  email: z.string().email(),
+});
+
+/** Business user shares the contract with an external company (email link). */
+export async function shareWithThirdParty(formData: FormData): Promise<void> {
+  const { requestId, company, email } = shareSchema.parse({
+    requestId: formData.get("requestId"),
+    company: formData.get("company"),
+    email: formData.get("email"),
+  });
+  ensure(canShareThirdParty(getRole()));
+  const req = getRequest(requestId);
+  if (!req || !req.draft) return;
+  const token = `tp_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
+  req.thirdParty = {
+    company,
+    email,
+    token,
+    sharedAt: new Date().toISOString(),
+    sharedBy: whoami(),
+  };
+  req.thirdPartyReview = undefined;
+  audit(
+    req,
+    whoami(),
+    "Shared with third party",
+    `Contract shared with ${company} (${email})`,
+  );
+  revalidatePath(`/requests/${req.id}`);
+}
+
+const tpReviewSchema = z.object({
+  token: z.string(),
+  name: z.string().min(2),
+  decision: z.enum(["APPROVED", "CHANGES_REQUESTED"]),
+  comment: z.string().optional(),
+});
+
+/** The external third party submits their review from the public link. */
+export async function submitThirdPartyReview(formData: FormData): Promise<void> {
+  const { token, name, decision, comment } = tpReviewSchema.parse({
+    token: formData.get("token"),
+    name: formData.get("name"),
+    decision: formData.get("decision"),
+    comment: formData.get("comment") ?? "",
+  });
+  const req = getRequestByToken(token);
+  if (!req) return;
+  req.thirdPartyReview = {
+    name,
+    decision,
+    comment: comment ?? "",
+    reviewedAt: new Date().toISOString(),
+  };
+  audit(
+    req,
+    `${name} (${req.thirdParty?.company ?? "Third Party"})`,
+    "Third-party review",
+    `${decision}${comment ? ` — ${comment}` : ""}`,
+  );
+  revalidatePath(`/requests/${req.id}`);
+  revalidatePath(`/external/${token}`);
 }
