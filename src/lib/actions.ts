@@ -39,6 +39,7 @@ import {
   canConfirmContract,
   canSubmitRevision,
   canFinalApprove,
+  canConfirmFinal,
   canSignByUser,
   canSignByLegal,
   canUploadDocuments,
@@ -539,17 +540,33 @@ export async function submitRevisedContract(requestId: string): Promise<void> {
   revalidatePath("/dashboard");
 }
 
-/** Legal Reviewer's final approval — sends the contract to the user to sign. */
+/** Legal Reviewer's final approval — sends the contract to the user to confirm. */
 export async function finalApproveContract(requestId: string): Promise<void> {
   const req = getRequest(requestId);
   if (!req) return;
   ensure(canFinalApprove(getRole(), req.status));
-  req.status = "USER_SIGNATURE";
+  req.status = "FINAL_CONFIRM";
   audit(
     req,
     whoami(),
     "Final approval",
-    "Legal Reviewer gave final approval — sent to the user to sign",
+    "Legal Reviewer gave final approval — sent to the user to confirm",
+  );
+  revalidatePath(`/requests/${req.id}`);
+  revalidatePath("/dashboard");
+}
+
+/** Business user confirms the finally-approved contract, then signs it. */
+export async function confirmFinalContract(requestId: string): Promise<void> {
+  const req = getRequest(requestId);
+  if (!req) return;
+  ensure(canConfirmFinal(getRole(), req.status));
+  req.status = "USER_SIGNATURE";
+  audit(
+    req,
+    whoami(),
+    "Contract confirmed",
+    "Business user confirmed the finally-approved contract — ready to sign",
   );
   revalidatePath(`/requests/${req.id}`);
   revalidatePath("/dashboard");

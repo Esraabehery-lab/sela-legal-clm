@@ -75,6 +75,14 @@ export function canConfirmContract(role: Role, status: RequestStatus): boolean {
   );
 }
 
+/** Business user confirms the finally-approved contract before signing. */
+export function canConfirmFinal(role: Role, status: RequestStatus): boolean {
+  return (
+    (role === "BUSINESS_USER" || role === "LEGAL_OPS") &&
+    status === "FINAL_CONFIRM"
+  );
+}
+
 /** The business user signs the contract in the portal (first signature). */
 export function canSignByUser(role: Role, status: RequestStatus): boolean {
   return (
@@ -225,6 +233,7 @@ export function awaitsAction(req: RequestLike, role: Role): boolean {
       req.status === "APPROVED" || // confirm the AI-generated contract
       req.status === "CONTRACT_REVIEW" || // contract under review — can edit
       req.status === "CONTRACT_REVISION" || // address review comments
+      req.status === "FINAL_CONFIRM" || // confirm after final approval
       req.status === "USER_SIGNATURE" // sign the contract in the portal
     );
   if (role === "CONTRACT_OWNER") return req.status === "CONFIRMED";
@@ -249,6 +258,7 @@ export function awaitsAction(req: RequestLike, role: Role): boolean {
       req.status === "APPROVED" ||
       req.status === "CONTRACT_REVISION" ||
       req.status === "FINAL_APPROVAL" ||
+      req.status === "FINAL_CONFIRM" ||
       req.status === "USER_SIGNATURE" ||
       req.status === "LEGAL_SIGNATURE" ||
       req.status === "CONFIRMED"

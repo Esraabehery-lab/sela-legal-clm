@@ -38,6 +38,7 @@ import {
   confirmContract,
   submitRevisedContract,
   finalApproveContract,
+  confirmFinalContract,
   signByUser,
   signByLegal,
 } from "@/lib/actions";
@@ -60,6 +61,7 @@ import {
   canConfirmContract,
   canSubmitRevision,
   canFinalApprove,
+  canConfirmFinal,
   isStageActionable,
   roleStage,
 } from "@/lib/permissions";
@@ -110,6 +112,7 @@ export default function RequestDetailPage({
     req.status === "CONTRACT_REVIEW" ||
     req.status === "CONTRACT_REVISION" ||
     req.status === "FINAL_APPROVAL" ||
+    req.status === "FINAL_CONFIRM" ||
     req.status === "USER_SIGNATURE" ||
     req.status === "LEGAL_SIGNATURE" ||
     req.status === "SIGNED" ||
@@ -125,6 +128,7 @@ export default function RequestDetailPage({
   const canConfirm = canConfirmContract(role, req.status);
   const canRevise = canSubmitRevision(role, req.status);
   const canFinalApproveNow = canFinalApprove(role, req.status);
+  const canConfirmFinalNow = canConfirmFinal(role, req.status);
 
   // In focused review, show only the reviewer's own approval row (not the
   // whole chain). Everyone else sees the full chain.
@@ -364,6 +368,23 @@ export default function RequestDetailPage({
                       )}
                     </p>
                     <form action={confirmContract.bind(null, req.id)}>
+                      <Button type="submit" size="sm" variant="mint">
+                        <CheckCircle2 className="h-4 w-4" />
+                        {t(locale, "Confirm Contract", "تأكيد العقد")}
+                      </Button>
+                    </form>
+                  </div>
+                )}
+                {canConfirmFinalNow && (
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-sela-mint/30 bg-sela-mint/[0.06] p-4">
+                    <p className="text-sm text-ink-200">
+                      {t(
+                        locale,
+                        "The contract has received final Legal approval. Confirm it to proceed to signature.",
+                        "حصل العقد على الاعتماد النهائي من القانونية. أكّده للانتقال إلى التوقيع.",
+                      )}
+                    </p>
+                    <form action={confirmFinalContract.bind(null, req.id)}>
                       <Button type="submit" size="sm" variant="mint">
                         <CheckCircle2 className="h-4 w-4" />
                         {t(locale, "Confirm Contract", "تأكيد العقد")}
