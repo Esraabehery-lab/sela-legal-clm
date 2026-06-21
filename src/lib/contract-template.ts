@@ -175,7 +175,13 @@ Operating-time/terms violations, cleanliness & public-health violations, and gen
   const money = value ? `${value.toLocaleString()} ${esc(req.currency)}` : BLANK;
   const bodyHtml = `
 <div class="ct-letterhead">
-  <div class="ct-brand"><span class="ct-mark"></span><span class="ct-word">sela</span></div>
+  <div class="ct-brand">
+    <svg class="ct-logo" viewBox="0 0 178 56" width="132" height="42" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="SELA">
+      <path d="M6 6 H40 L54 20 V50 H6 Z" fill="#7a7d82"/>
+      <path d="M40 6 H50 L16 50 H6 Z" fill="#ffffff"/>
+      <text x="66" y="43" font-family="Arial, Helvetica, sans-serif" font-size="38" font-weight="700" fill="#7a7d82" letter-spacing="-1.5">sela</text>
+    </svg>
+  </div>
   <div class="ct-ref">${esc(req.reference)}</div>
 </div>
 <h1 class="ct-title">عقد تشغيل — Operation Contract</h1>
