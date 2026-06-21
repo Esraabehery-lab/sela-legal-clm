@@ -29,18 +29,11 @@ const EDIT_LOCKED_STATUSES: RequestStatus[] = [
 ];
 
 export function canEditDraft(role: Role, status?: RequestStatus): boolean {
-  // Business user / Legal Ops can edit the contract anytime before signing.
-  if (role === "BUSINESS_USER" || role === "LEGAL_OPS") {
-    if (!status) return true;
-    return !EDIT_LOCKED_STATUSES.includes(status);
-  }
-  // Procurement / Finance teams edit the contract during contract review.
-  if (role === "PROCUREMENT" || role === "FINANCE")
-    return status === "CONTRACT_REVIEW";
-  // Legal edits during contract review and their final approval.
-  if (role === "LEGAL")
-    return status === "CONTRACT_REVIEW" || status === "FINAL_APPROVAL";
-  return false;
+  // Auditors are read-only.
+  if (role === "AUDITOR") return false;
+  // Everyone else can edit the AI-generated contract anytime before signing.
+  if (!status) return true;
+  return !EDIT_LOCKED_STATUSES.includes(status);
 }
 
 export function canEditRequest(role: Role, status: RequestStatus): boolean {
