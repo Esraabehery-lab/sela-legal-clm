@@ -588,8 +588,7 @@ export default function RequestDetailPage({
                             "بانتظار المراجعة السابقة.",
                           )}
                         </p>
-                      ) : req.status === "CONTRACT_REVIEW" &&
-                        canApproveStage(role, rv.stage) ? (
+                      ) : canApproveStage(role, rv.stage) ? (
                         <ContractReviewActions
                           requestId={req.id}
                           stage={rv.stage}
