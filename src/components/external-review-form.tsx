@@ -59,15 +59,21 @@ export function ExternalReviewForm({
         className="max-h-[520px] font-mono text-[13px] leading-relaxed"
       />
 
-      <Input
-        name="name"
-        required
-        minLength={2}
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder={t(locale, "Your full name", "اسمك الكامل")}
-        className="max-w-sm"
-      />
+      <div className="space-y-1">
+        <label className="text-sm font-medium text-ink-100">
+          {t(locale, "Your full name", "اسمك الكامل")}
+          <span className="ms-1 text-red-400">*</span>
+        </label>
+        <Input
+          name="name"
+          required
+          minLength={2}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={t(locale, "e.g. Mohammed Ahmed", "مثال: محمد أحمد")}
+          className="max-w-sm"
+        />
+      </div>
       <Textarea
         name="comment"
         rows={2}
@@ -95,6 +101,15 @@ export function ExternalReviewForm({
           {t(locale, "Request changes & send back", "طلب تعديلات وإعادة الإرسال")}
         </Button>
       </div>
+      {!ready && !pending && (
+        <p className="text-xs text-amber-400">
+          {t(
+            locale,
+            "Enter your full name above to enable Approve / Request changes.",
+            "أدخل اسمك الكامل بالأعلى لتفعيل الموافقة / طلب التعديلات.",
+          )}
+        </p>
+      )}
     </form>
   );
 }

@@ -53,6 +53,15 @@ export function ExternalSignForm({
         <PenLine className="h-4 w-4" />
         {t(locale, "Sign & Execute", "توقيع وتنفيذ")}
       </Button>
+      {!ready && !pending && (
+        <p className="text-xs text-amber-400">
+          {t(
+            locale,
+            "Enter your full name above to sign.",
+            "أدخل اسمك الكامل بالأعلى للتوقيع.",
+          )}
+        </p>
+      )}
     </form>
   );
 }
