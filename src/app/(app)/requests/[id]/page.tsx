@@ -18,7 +18,7 @@ import {
   DecisionBadge,
   SeverityBadge,
 } from "@/components/status-badge";
-import { DraftEditor } from "@/components/draft-editor";
+import { RichContract } from "@/components/rich-contract";
 import { ObligationRow } from "@/components/obligation-row";
 import { DfDetailsCard } from "@/components/df-details-card";
 import { getRequest } from "@/lib/store";
@@ -348,8 +348,7 @@ export default function RequestDetailPage({
                 </CardDescription>
                 </div>
                 <DownloadContractPdf
-                  title={req.draft.title}
-                  body={req.draft.bodyEn}
+                  html={req.draft.bodyHtml}
                   fileName={`${req.reference}.pdf`}
                   locale={locale}
                 />
@@ -484,9 +483,9 @@ export default function RequestDetailPage({
                     )}
                   </div>
                 )}
-                <DraftEditor
+                <RichContract
                   requestId={req.id}
-                  body={locale === "ar" ? req.draft.bodyAr : req.draft.bodyEn}
+                  html={req.draft.bodyHtml}
                   canEdit={canEditDraft}
                   locale={locale}
                 />

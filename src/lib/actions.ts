@@ -333,15 +333,27 @@ export async function regenerate(requestId: string): Promise<void> {
 
 const saveSchema = z.object({
   requestId: z.string(),
-  bodyEn: z.string(),
+  bodyHtml: z.string(),
   note: z.string().optional(),
 });
 
-/** US-007: business unit edits the draft; version history is kept. */
+/** Plain-text fallback derived from the rich HTML (for the external page). */
+function htmlToText(html: string): string {
+  return html
+    .replace(/<\/(p|tr|h1|h2|li|table)>/gi, "\n")
+    .replace(/<br\s*\/?>(?=)/gi, "\n")
+    .replace(/<th[^>]*>/gi, "")
+    .replace(/<td[^>]*>/gi, " | ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+/** US-007: business unit edits the rich contract; version history is kept. */
 export async function saveDraft(formData: FormData): Promise<void> {
-  const { requestId, bodyEn, note } = saveSchema.parse({
+  const { requestId, bodyHtml, note } = saveSchema.parse({
     requestId: formData.get("requestId"),
-    bodyEn: formData.get("bodyEn"),
+    bodyHtml: formData.get("bodyHtml"),
     note: formData.get("note") ?? "",
   });
   const req = getRequest(requestId);
@@ -353,13 +365,14 @@ export async function saveDraft(formData: FormData): Promise<void> {
     bodyEn: req.draft.bodyEn,
     savedAt: req.draft.updatedAt,
     savedBy: whoami(),
-    note: note || "Edited by business unit",
+    note: note || "Edited",
   });
-  req.draft.bodyEn = bodyEn;
+  req.draft.bodyHtml = bodyHtml;
+  req.draft.bodyEn = htmlToText(bodyHtml);
   req.draft.version += 1;
   req.draft.updatedAt = new Date().toISOString();
   if (req.status === "DRAFT_GENERATED") req.status = "BU_REVIEW";
-  audit(req, whoami(), "Draft edited", `Saved version ${req.draft.version}`);
+  audit(req, whoami(), "Contract edited", `Saved version ${req.draft.version}`);
   revalidatePath(`/requests/${req.id}`);
 }
 
@@ -748,7 +761,7 @@ export async function submitThirdPartyReview(formData: FormData): Promise<void> 
   const actor = `${name} (${req.thirdParty?.company ?? "Third Party"})`;
 
   // Save the third party's edits to the contract (version-tracked).
-  if (body && body.trim() && body !== req.draft.bodyEn) {
+  if (body && body.trim() && body !== req.draft.bodyHtml) {
     req.versions.unshift({
       version: req.draft.version,
       bodyEn: req.draft.bodyEn,
@@ -756,7 +769,8 @@ export async function submitThirdPartyReview(formData: FormData): Promise<void> 
       savedBy: actor,
       note: "Edited by third party",
     });
-    req.draft.bodyEn = body;
+    req.draft.bodyHtml = body;
+    req.draft.bodyEn = htmlToText(body);
     req.draft.version += 1;
     req.draft.updatedAt = new Date().toISOString();
     audit(req, actor, "Contract edited", `Third party edited the contract (v${req.draft.version})`);

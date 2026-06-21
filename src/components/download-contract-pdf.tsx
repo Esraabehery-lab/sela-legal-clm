@@ -4,92 +4,56 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { t } from "@/lib/i18n";
 import type { Locale } from "@/lib/types";
-import { toast } from "sonner";
 import { FileDown } from "lucide-react";
 
-/**
- * Generates and downloads the contract as a PDF (client-side, via jsPDF).
- * Uses the English body for reliable font rendering.
- */
+// Inline document styling for the print window (mirrors .contract-doc).
+const PRINT_CSS = `
+  @page { size: A4; margin: 18mm 16mm; }
+  body { font-family: "Times New Roman", Georgia, serif; color: #1a1a1a; font-size: 13px; line-height: 1.6; direction: rtl; text-align: right; }
+  .ct-letterhead { display:flex; align-items:center; justify-content:space-between; border-bottom:2px solid #e31b23; padding-bottom:10px; margin-bottom:16px; direction:ltr; }
+  .ct-brand { display:flex; align-items:center; gap:8px; }
+  .ct-mark { width:18px; height:18px; background:#e31b23; border-radius:3px; clip-path: polygon(0 0, 70% 0, 100% 35%, 100% 100%, 0 100%); }
+  .ct-word { font-family:Arial,sans-serif; font-weight:700; font-size:20px; color:#333; }
+  .ct-ref { font-family:Arial,sans-serif; font-size:12px; color:#777; }
+  .ct-title { text-align:center; font-size:18px; font-weight:700; margin:6px 0 18px; }
+  .ct-h2 { font-size:14px; font-weight:700; color:#b3151c; border-bottom:1px solid #ddd; padding-bottom:4px; margin:20px 0 10px; }
+  table.ct-table { width:100%; border-collapse:collapse; margin:8px 0 14px; font-size:12.5px; }
+  table.ct-table th, table.ct-table td { border:1px solid #bfbfbf; padding:6px 9px; vertical-align:top; }
+  table.ct-table th { background:#d9d9d9; font-weight:700; text-align:right; }
+  table.ct-table td { background:#f2f2f2; }
+  table.ct-penalties th { background:#bfbfbf; text-align:center; }
+  table.ct-penalties td { text-align:center; background:#fff; }
+  table.ct-sign th { background:#d9d9d9; text-align:center; }
+  table.ct-sign td { background:#fff; height:90px; }
+  ol.ct-terms { padding-inline-start:20px; } ol.ct-terms li { margin-bottom:8px; }
+  .ct-note { font-size:11.5px; color:#555; }
+`;
+
+/** Opens a print-ready view of the contract (Save as PDF preserves tables/colors). */
 export function DownloadContractPdf({
-  title,
-  body,
+  html,
   fileName,
   locale,
 }: {
-  title: string;
-  body: string;
+  html: string;
   fileName: string;
   locale: Locale;
 }) {
-  const [busy, setBusy] = React.useState(false);
-
-  async function download() {
-    setBusy(true);
-    try {
-      const { jsPDF } = await import("jspdf");
-      const doc = new jsPDF({ unit: "pt", format: "a4" });
-      const margin = 48;
-      const pageW = doc.internal.pageSize.getWidth();
-      const pageH = doc.internal.pageSize.getHeight();
-      const usableW = pageW - margin * 2;
-      let y = margin;
-
-      // SELA brand header
-      doc.setFillColor(227, 27, 35); // SELA red
-      doc.roundedRect(margin, y - 2, 16, 16, 3, 3, "F");
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(22);
-      doc.setTextColor(33, 33, 33);
-      doc.text("SELA", margin + 24, y + 11);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(6.5);
-      doc.setTextColor(130, 130, 130);
-      doc.text("SPECTACULAR. EVERYDAY.", margin + 24, y + 19);
-      y += 30;
-      doc.setDrawColor(210, 210, 210);
-      doc.line(margin, y, pageW - margin, y);
-      y += 20;
-
-      // Title
-      doc.setTextColor(20, 20, 20);
-      doc.setFont("times", "bold");
-      doc.setFontSize(14);
-      for (const line of doc.splitTextToSize(title, usableW)) {
-        doc.text(line, margin, y);
-        y += 20;
-      }
-      y += 8;
-
-      // Body (monospace to preserve the contract's layout)
-      doc.setFont("courier", "normal");
-      doc.setFontSize(9.5);
-      const lineH = 13;
-      for (const raw of body.split("\n")) {
-        const wrapped = doc.splitTextToSize(raw.length ? raw : " ", usableW);
-        for (const line of wrapped) {
-          if (y > pageH - margin) {
-            doc.addPage();
-            y = margin;
-          }
-          doc.text(line, margin, y);
-          y += lineH;
-        }
-      }
-
-      doc.save(fileName);
-      toast.success(t(locale, "Contract PDF downloaded", "تم تنزيل ملف العقد"));
-    } finally {
-      setBusy(false);
-    }
+  function download() {
+    const w = window.open("", "_blank", "width=900,height=1000");
+    if (!w) return;
+    w.document.write(
+      `<!doctype html><html><head><meta charset="utf-8"><title>${fileName}</title><style>${PRINT_CSS}</style></head><body>${html}</body></html>`,
+    );
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 400);
   }
 
   return (
-    <Button type="button" size="sm" variant="outline" onClick={download} disabled={busy}>
+    <Button type="button" size="sm" variant="outline" onClick={download}>
       <FileDown className="h-4 w-4" />
-      {busy
-        ? t(locale, "Generating…", "جارٍ الإنشاء…")
-        : t(locale, "Download PDF", "تنزيل PDF")}
+      {t(locale, "Download PDF", "تنزيل PDF")}
     </Button>
   );
 }

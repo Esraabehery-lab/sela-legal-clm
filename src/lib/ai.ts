@@ -310,9 +310,17 @@ export function generateContract(req: DFRequest): ContractDraft {
   const cat = req.classification?.category ?? "OTHER";
   const clauses = recommendClauses(cat);
   // Use the SELA F&B / Operation Contract template (mirrors the approved doc).
-  const { title, bodyEn, bodyAr } = buildOperationContract(req);
+  const { title, bodyEn, bodyAr, bodyHtml } = buildOperationContract(req);
 
-  return { title, bodyEn, bodyAr, clauses, version: 1, updatedAt: new Date().toISOString() };
+  return {
+    title,
+    bodyEn,
+    bodyAr,
+    bodyHtml,
+    clauses,
+    version: 1,
+    updatedAt: new Date().toISOString(),
+  };
 }
 
 /** Compliance validation + risk score (US-011, BR-05). */

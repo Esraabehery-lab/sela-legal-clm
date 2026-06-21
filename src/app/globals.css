@@ -108,4 +108,56 @@
     clip-path: polygon(0 0, 70% 0, 100% 35%, 100% 100%, 0 100%);
     border-radius: 4px;
   }
+
+  /* Rich contract document — looks like a real paper document */
+  .contract-doc {
+    background: #ffffff;
+    color: #1a1a1a;
+    padding: 28px 32px;
+    border-radius: 8px;
+    font-family: "Times New Roman", Georgia, serif;
+    font-size: 13px;
+    line-height: 1.6;
+    direction: rtl;
+    text-align: right;
+  }
+  .contract-doc:focus { outline: 2px solid rgba(245, 231, 107, 0.6); }
+  .contract-doc p { margin: 0 0 10px; }
+  .contract-doc .ct-letterhead {
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 2px solid #e31b23; padding-bottom: 10px; margin-bottom: 16px;
+    direction: ltr;
+  }
+  .contract-doc .ct-brand { display: flex; align-items: center; gap: 8px; }
+  .contract-doc .ct-mark {
+    width: 18px; height: 18px; background: #e31b23; border-radius: 3px;
+    clip-path: polygon(0 0, 70% 0, 100% 35%, 100% 100%, 0 100%);
+  }
+  .contract-doc .ct-word { font-family: Arial, sans-serif; font-weight: 700; font-size: 20px; color: #333; }
+  .contract-doc .ct-ref { font-family: Arial, sans-serif; font-size: 12px; color: #777; }
+  .contract-doc .ct-title {
+    text-align: center; font-size: 18px; font-weight: 700; margin: 6px 0 18px; color: #111;
+  }
+  .contract-doc .ct-h2 {
+    font-size: 14px; font-weight: 700; color: #b3151c;
+    border-bottom: 1px solid #ddd; padding-bottom: 4px; margin: 20px 0 10px;
+  }
+  .contract-doc table.ct-table {
+    width: 100%; border-collapse: collapse; margin: 8px 0 14px; font-size: 12.5px;
+  }
+  .contract-doc table.ct-table th,
+  .contract-doc table.ct-table td {
+    border: 1px solid #bfbfbf; padding: 6px 9px; vertical-align: top;
+  }
+  .contract-doc table.ct-table th {
+    background: #d9d9d9; color: #1a1a1a; font-weight: 700; text-align: right;
+  }
+  .contract-doc table.ct-table td { background: #f2f2f2; }
+  .contract-doc table.ct-penalties th { background: #bfbfbf; text-align: center; }
+  .contract-doc table.ct-penalties td { text-align: center; background: #ffffff; }
+  .contract-doc table.ct-sign th { background: #d9d9d9; text-align: center; }
+  .contract-doc table.ct-sign td { background: #ffffff; height: 90px; }
+  .contract-doc ol.ct-terms { padding-inline-start: 20px; margin: 8px 0; }
+  .contract-doc ol.ct-terms li { margin-bottom: 8px; }
+  .contract-doc .ct-note { font-size: 11.5px; color: #555; }
 }

@@ -139,6 +139,8 @@ export interface ContractDraft {
   title: string;
   bodyEn: string;
   bodyAr: string;
+  /** Rich HTML rendering of the contract (tables, sections) — the editable doc. */
+  bodyHtml: string;
   clauses: Clause[];
   version: number;
   updatedAt: string;

@@ -23,7 +23,7 @@ export default function ExternalReviewPage({
   const req = getRequestByToken(params.token);
   if (!req || !req.draft || !req.thirdParty) notFound();
 
-  const body = locale === "ar" ? req.draft.bodyAr : req.draft.bodyEn;
+  const html = req.draft.bodyHtml;
   const review = req.thirdPartyReview;
   const verified = cookies().get(`tpok_${params.token}`)?.value === "1";
 
@@ -66,7 +66,7 @@ export default function ExternalReviewPage({
                   "يرجى مراجعة العقد (يمكنكم تعديله) وإرسال ردكم.",
                 )}
               </p>
-              <ExternalReviewForm token={params.token} body={body} locale={locale} />
+              <ExternalReviewForm token={params.token} html={html} locale={locale} />
             </div>
           ) : req.status === "THIRD_PARTY_SIGNATURE" ? (
             <div className="space-y-3 border-t border-line pt-4">
@@ -90,9 +90,10 @@ export default function ExternalReviewPage({
                   )}
                 </div>
               </div>
-              <div className="max-h-[420px] overflow-auto whitespace-pre-wrap rounded-lg border border-line bg-surface-1 p-4 font-mono text-[13px] leading-relaxed text-ink-200">
-                {body}
-              </div>
+              <div
+                className="contract-doc max-h-[420px] overflow-auto"
+                dangerouslySetInnerHTML={{ __html: html }}
+              />
               <ExternalSignForm token={params.token} locale={locale} />
             </div>
           ) : (
@@ -133,9 +134,10 @@ export default function ExternalReviewPage({
                   )}
                 </div>
               </div>
-              <div className="max-h-[520px] overflow-auto whitespace-pre-wrap rounded-lg border border-line bg-surface-1 p-4 font-mono text-[13px] leading-relaxed text-ink-200">
-                {body}
-              </div>
+              <div
+                className="contract-doc max-h-[520px] overflow-auto"
+                dangerouslySetInnerHTML={{ __html: html }}
+              />
             </>
           )}
           </>
