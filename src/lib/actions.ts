@@ -711,6 +711,24 @@ export async function shareWithThirdParty(formData: FormData): Promise<void> {
   ensure(canShareThirdParty(getRole()));
   const req = getRequest(requestId);
   if (!req || !req.draft) return;
+
+  // Capture any on-screen edits the business user made before sharing, so the
+  // third party receives the latest version (even if not yet "Saved").
+  const body = (formData.get("body") as string | null)?.trim();
+  if (body && body.length > 0 && body !== req.draft.bodyHtml) {
+    req.draft.version += 1;
+    req.draft.bodyHtml = body;
+    req.draft.bodyEn = htmlToText(body);
+    req.draft.updatedAt = new Date().toISOString();
+    req.versions.push({
+      version: req.draft.version,
+      bodyEn: req.draft.bodyEn,
+      savedAt: req.draft.updatedAt,
+      savedBy: whoami(),
+      note: "Edited before sharing with the third party",
+    });
+  }
+
   const token = `tp_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
   const otp = String(Math.floor(100000 + Math.random() * 900000)); // 6-digit
 

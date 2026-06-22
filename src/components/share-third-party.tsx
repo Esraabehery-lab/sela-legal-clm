@@ -64,6 +64,10 @@ export function ShareThirdParty({
         <form
           action={(fd) =>
             start(async () => {
+              // Include the current on-screen contract so unsaved edits are
+              // shared with the third party.
+              const live = document.querySelector(".contract-doc")?.innerHTML;
+              if (live) fd.set("body", live);
               await shareWithThirdParty(fd);
               toast.success(
                 t(locale, "Shared with third party", "تمت المشاركة مع الطرف الخارجي"),
