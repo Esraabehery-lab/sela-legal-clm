@@ -41,10 +41,14 @@ export function DownloadContractPdf({
   locale: Locale;
 }) {
   function download() {
+    // Prefer the live, on-screen contract (includes the user's current edits,
+    // even unsaved ones); fall back to the saved snapshot passed in as a prop.
+    const live = document.querySelector(".contract-doc")?.innerHTML;
+    const body = live && live.trim().length > 0 ? live : html;
     const w = window.open("", "_blank", "width=900,height=1000");
     if (!w) return;
     w.document.write(
-      `<!doctype html><html><head><meta charset="utf-8"><title>${fileName}</title><style>${PRINT_CSS}</style></head><body>${html}</body></html>`,
+      `<!doctype html><html><head><meta charset="utf-8"><title>${fileName}</title><style>${PRINT_CSS}</style></head><body>${body}</body></html>`,
     );
     w.document.close();
     w.focus();
