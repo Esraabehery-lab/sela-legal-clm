@@ -490,6 +490,7 @@ export default function RequestDetailPage({
                   requestId={req.id}
                   html={req.draft.bodyHtml}
                   canEdit={canEditDraft}
+                  fileName={`${req.reference}.pdf`}
                   locale={locale}
                 />
 

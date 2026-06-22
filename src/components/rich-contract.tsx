@@ -8,6 +8,7 @@ import { t } from "@/lib/i18n";
 import type { Locale } from "@/lib/types";
 import { toast } from "sonner";
 import { Save, Pencil } from "lucide-react";
+import { DownloadContractPdf } from "@/components/download-contract-pdf";
 
 /**
  * Rich, document-style contract. Renders the HTML body as a paper document
@@ -19,11 +20,13 @@ export function RichContract({
   requestId,
   html,
   canEdit,
+  fileName,
   locale,
 }: {
   requestId: string;
   html: string;
   canEdit: boolean;
+  fileName: string;
   locale: Locale;
 }) {
   const ref = React.useRef<HTMLDivElement>(null);
@@ -52,16 +55,21 @@ export function RichContract({
 
   return (
     <div className="space-y-3">
-      {canEdit && (
-        <p className="flex items-center gap-1.5 text-xs text-sela-yellow">
-          <Pencil className="h-3.5 w-3.5" />
-          {t(
-            locale,
-            "This document is editable — click anywhere inside it and type, then Save Version.",
-            "هذا المستند قابل للتعديل — اضغط بداخله واكتب، ثم احفظ النسخة.",
-          )}
-        </p>
-      )}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        {canEdit ? (
+          <p className="flex items-center gap-1.5 text-xs text-sela-yellow">
+            <Pencil className="h-3.5 w-3.5" />
+            {t(
+              locale,
+              "This document is editable — click anywhere inside it and type, then Save Version.",
+              "هذا المستند قابل للتعديل — اضغط بداخله واكتب، ثم احفظ النسخة.",
+            )}
+          </p>
+        ) : (
+          <span />
+        )}
+        <DownloadContractPdf html={html} fileName={fileName} locale={locale} />
+      </div>
       <div
         ref={ref}
         className={`contract-doc max-h-[640px] overflow-auto ${
