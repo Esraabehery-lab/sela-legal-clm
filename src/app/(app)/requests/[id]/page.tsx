@@ -174,6 +174,13 @@ export default function RequestDetailPage({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {req.draft && (
+            <DownloadContractPdf
+              html={req.draft.bodyHtml}
+              fileName={`${req.reference}.pdf`}
+              locale={locale}
+            />
+          )}
           {canEditReq && (
             <Button asChild variant="outline" size="sm">
               <Link href={`/requests/${req.id}/edit`}>
@@ -328,8 +335,7 @@ export default function RequestDetailPage({
           {/* AI generated draft + clauses */}
           {showContract && req.draft && (
             <Card>
-              <CardHeader className="flex-row items-start justify-between gap-3">
-                <div className="space-y-1.5">
+              <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
                   <FileText className="h-4 w-4 text-sela-yellow" />
                   {t(locale, "AI-Generated Contract", "العقد المُولّد بالذكاء")}
@@ -348,12 +354,6 @@ export default function RequestDetailPage({
                         "تم إنشاؤه بالذكاء الاصطناعي بعد اعتماد القانونية.",
                       )}
                 </CardDescription>
-                </div>
-                <DownloadContractPdf
-                  html={req.draft.bodyHtml}
-                  fileName={`${req.reference}.pdf`}
-                  locale={locale}
-                />
               </CardHeader>
               <CardContent className="space-y-5">
                 {/* Contract letterhead */}
