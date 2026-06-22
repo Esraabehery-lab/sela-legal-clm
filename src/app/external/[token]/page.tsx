@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ExternalReviewForm } from "@/components/external-review-form";
 import { ExternalSignForm } from "@/components/external-sign-form";
 import { OtpGate } from "@/components/otp-gate";
+import { DownloadContractPdf } from "@/components/download-contract-pdf";
 import { getRequestByToken } from "@/lib/store";
 import { getLocale } from "@/lib/prefs";
 import { t } from "@/lib/i18n";
@@ -35,17 +36,26 @@ export default function ExternalReviewPage({
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            {t(locale, "Contract for your review", "عقد لمراجعتكم")}
-          </CardTitle>
-          <p className="text-sm text-ink-400">
-            {t(
-              locale,
-              `Shared with ${req.thirdParty.company} for review.`,
-              `تمت المشاركة مع ${req.thirdParty.company} للمراجعة.`,
-            )}
-          </p>
+        <CardHeader className="flex-row items-start justify-between gap-3">
+          <div className="space-y-1.5">
+            <CardTitle className="text-base">
+              {t(locale, "Contract for your review", "عقد لمراجعتكم")}
+            </CardTitle>
+            <p className="text-sm text-ink-400">
+              {t(
+                locale,
+                `Shared with ${req.thirdParty.company} for review.`,
+                `تمت المشاركة مع ${req.thirdParty.company} للمراجعة.`,
+              )}
+            </p>
+          </div>
+          {verified && (
+            <DownloadContractPdf
+              html={html}
+              fileName={`${req.reference}.pdf`}
+              locale={locale}
+            />
+          )}
         </CardHeader>
         <CardContent className="space-y-5">
           {!verified ? (
