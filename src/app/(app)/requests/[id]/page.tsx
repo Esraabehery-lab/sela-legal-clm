@@ -23,6 +23,7 @@ import { ObligationRow } from "@/components/obligation-row";
 import { DfDetailsCard } from "@/components/df-details-card";
 import { getRequest } from "@/lib/store";
 import { getLocale, getRole } from "@/lib/prefs";
+import { actorName } from "@/lib/roles";
 import {
   t,
   CATEGORY_LABELS,
@@ -506,6 +507,7 @@ export default function RequestDetailPage({
                     html={req.draft.bodyHtml}
                     canEdit={canEditDraft}
                     fileName={`${req.reference}.pdf`}
+                    author={actorName(role, locale)}
                     locale={locale}
                   />
                 )}

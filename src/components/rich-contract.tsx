@@ -9,6 +9,7 @@ import type { Locale } from "@/lib/types";
 import { toast } from "sonner";
 import { Save, Pencil } from "lucide-react";
 import { DownloadContractPdf } from "@/components/download-contract-pdf";
+import { useTrackChanges } from "@/components/use-track-changes";
 
 /**
  * Rich, document-style contract. Renders the HTML body as a paper document
@@ -21,17 +22,22 @@ export function RichContract({
   html,
   canEdit,
   fileName,
+  author,
   locale,
 }: {
   requestId: string;
   html: string;
   canEdit: boolean;
   fileName: string;
+  author: string;
   locale: Locale;
 }) {
   const ref = React.useRef<HTMLDivElement>(null);
   const [note, setNote] = React.useState("");
   const [pending, start] = React.useTransition();
+
+  // Mark this reviewer's edits in yellow, attributed to their name.
+  useTrackChanges(ref, author, canEdit);
 
   // Inject the HTML once (and when the saved version changes) — never during
   // editing, so the user's keystrokes are not wiped by a re-render.
@@ -61,8 +67,8 @@ export function RichContract({
             <Pencil className="h-3.5 w-3.5" />
             {t(
               locale,
-              "This document is editable — click anywhere inside it and type, then Save Version.",
-              "هذا المستند قابل للتعديل — اضغط بداخله واكتب، ثم احفظ النسخة.",
+              "Editable — your changes are highlighted in yellow with your name. Type, then Save Version.",
+              "قابل للتعديل — تظهر تغييراتك بالأصفر مع اسمك. اكتب ثم احفظ النسخة.",
             )}
           </p>
         ) : (

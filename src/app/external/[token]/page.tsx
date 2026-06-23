@@ -81,6 +81,7 @@ export default function ExternalReviewPage({
                 token={params.token}
                 html={html}
                 upload={req.thirdPartyUpload}
+                author={req.thirdParty.company}
                 locale={locale}
               />
             </div>

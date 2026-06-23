@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { submitThirdPartyReview, uploadThirdPartyFile } from "@/lib/actions";
 import { UploadedContract } from "@/components/uploaded-contract";
+import { useTrackChanges } from "@/components/use-track-changes";
 import { t } from "@/lib/i18n";
 import type { Locale, ThirdPartyUpload } from "@/lib/types";
 import { toast } from "sonner";
@@ -20,15 +21,20 @@ export function ExternalReviewForm({
   token,
   html,
   upload,
+  author,
   locale,
 }: {
   token: string;
   html: string;
   upload?: ThirdPartyUpload;
+  author: string;
   locale: Locale;
 }) {
   const docRef = React.useRef<HTMLDivElement>(null);
   const fileRef = React.useRef<HTMLInputElement>(null);
+
+  // Mark the third party's inline edits in yellow, attributed to their company.
+  useTrackChanges(docRef, author, !upload);
   const [name, setName] = React.useState("");
   const [comment, setComment] = React.useState("");
   const [busy, setBusy] = React.useState(false);
