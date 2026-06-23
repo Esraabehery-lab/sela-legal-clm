@@ -28,6 +28,36 @@ pnpm dev          # or: npm run dev
 No database or external services are required. Restarting the dev server
 resets the seeded data.
 
+## Deploy a public demo (so anyone can test)
+
+This app keeps its data **in memory / a local file**, so deploy it as a
+**persistent server** (Render / Railway) rather than a serverless host —
+that way the multi-step approval workflow keeps its state during a session.
+
+### One-click on Render (recommended)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Esraabehery-lab/sela-legal-clm)
+
+1. Click the button (it reads `render.yaml` in this repo).
+2. Sign in with GitHub and confirm — Render runs `pnpm install && pnpm build`
+   and starts the server.
+3. After ~2–3 minutes you get a public URL like
+   `https://sela-legal-clm.onrender.com` — share it so anyone can test.
+
+> Free Render services sleep after inactivity, so the first visit may take
+> ~30–50s to wake. Data resets on each redeploy/restart (it's a demo store).
+
+### Alternatives
+
+- **Railway** — New Project → Deploy from GitHub repo → it auto-detects
+  Next.js; set the start command to `pnpm start`.
+- **Vercel** works for the UI, but because it's serverless the in-memory
+  store isn't shared between requests, so the live workflow state won't
+  persist reliably — prefer Render/Railway for a working end-to-end demo.
+
+> To enable auto-sending the third-party contract link by email, set the
+> `SMTP_*` environment variables (see `.env.example`) in your host's dashboard.
+
 ## Try the flow
 
 1. **Dashboard** — contract-status, approval-bottleneck and compliance views.

@@ -1,0 +1,21 @@
+# Render Blueprint — one-click deploy of the SELA Legal CLM demo.
+# A persistent Node web service (not serverless) so the in-memory / file-backed
+# store keeps the multi-step workflow state during a testing session.
+services:
+  - type: web
+    name: sela-legal-clm
+    runtime: node
+    plan: free
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    startCommand: pnpm start
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      # Optional: set these in the Render dashboard to enable auto-sending the
+      # third-party contract link by email (otherwise the link/OTP is shown).
+      # - key: SMTP_HOST
+      # - key: SMTP_PORT
+      # - key: SMTP_USER
+      # - key: SMTP_PASS
+      # - key: SMTP_FROM
