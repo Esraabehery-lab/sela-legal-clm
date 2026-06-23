@@ -4,7 +4,7 @@ import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { submitThirdPartyReview } from "@/lib/actions";
+import { submitThirdPartyReview, replaceContractByThirdParty } from "@/lib/actions";
 import { t } from "@/lib/i18n";
 import type { Locale } from "@/lib/types";
 import { toast } from "sonner";
@@ -110,7 +110,15 @@ export function ExternalReviewForm({
         return;
       }
       if (docRef.current) docRef.current.innerHTML = docHtml;
-      toast.success(t(locale, "Contract uploaded", "تم رفع العقد"));
+      // Replace the stored contract immediately so the old document is swapped
+      // out (not just previewed locally).
+      const fd = new FormData();
+      fd.set("token", token);
+      fd.set("body", docHtml);
+      await replaceContractByThirdParty(fd);
+      toast.success(
+        t(locale, "Contract replaced with your upload", "تم استبدال العقد بالملف المرفوع"),
+      );
     } catch {
       toast.error(
         t(locale, "Could not read that file.", "تعذّر قراءة هذا الملف."),

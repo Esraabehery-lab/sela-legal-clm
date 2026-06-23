@@ -809,6 +809,40 @@ const tpReviewSchema = z.object({
   body: z.string().optional(),
 });
 
+/**
+ * The third party uploads a revised contract file — it replaces the current
+ * contract document immediately (version-tracked) so the old one is swapped out.
+ */
+export async function replaceContractByThirdParty(
+  formData: FormData,
+): Promise<void> {
+  const token = String(formData.get("token") ?? "");
+  const body = String(formData.get("body") ?? "");
+  const req = getRequestByToken(token);
+  if (!req || !req.draft || req.status !== "THIRD_PARTY_REVIEW") return;
+  if (!body.trim() || body === req.draft.bodyHtml) return;
+  const actor = req.thirdParty?.company ?? "Third Party";
+  req.versions.unshift({
+    version: req.draft.version,
+    bodyEn: req.draft.bodyEn,
+    savedAt: req.draft.updatedAt,
+    savedBy: actor,
+    note: "Replaced by third-party upload",
+  });
+  req.draft.bodyHtml = body;
+  req.draft.bodyEn = htmlToText(body);
+  req.draft.version += 1;
+  req.draft.updatedAt = new Date().toISOString();
+  audit(
+    req,
+    actor,
+    "Contract replaced",
+    `Third party uploaded a new contract document (v${req.draft.version})`,
+  );
+  revalidatePath(`/external/${token}`);
+  revalidatePath(`/requests/${req.id}`);
+}
+
 /** The external third party submits their review (and edits) from the link. */
 export async function submitThirdPartyReview(formData: FormData): Promise<void> {
   const { token, name, decision, comment, body } = tpReviewSchema.parse({
