@@ -476,15 +476,23 @@ export async function confirmContract(requestId: string): Promise<void> {
   const req = getRequest(requestId);
   if (!req) return;
   ensure(canConfirmContract(getRole(), req.status));
-  req.contractReviews = (["PROCUREMENT", "FINANCE", "LEGAL"] as const).map(
-    (stage) => ({ stage, decision: "PENDING" as ApprovalDecision }),
-  );
+  // Cash-In deals (money coming in) don't involve Procurement — skip that
+  // stage and review Finance → Legal only.
+  const ft = req.df?.financialType ?? "";
+  const isCashIn = ft === "Cash-In" || ft === "Gov. Cash-In";
+  const chain = isCashIn
+    ? (["FINANCE", "LEGAL"] as const)
+    : (["PROCUREMENT", "FINANCE", "LEGAL"] as const);
+  req.contractReviews = chain.map((stage) => ({
+    stage,
+    decision: "PENDING" as ApprovalDecision,
+  }));
   req.status = "CONTRACT_REVIEW";
   audit(
     req,
     whoami(),
     "Contract confirmed",
-    "Confirmed — routed to Procurement → Finance → Legal for contract review",
+    `Confirmed — routed to ${chain.join(" → ")} for contract review`,
   );
   revalidatePath(`/requests/${req.id}`);
   revalidatePath("/dashboard");
