@@ -66,6 +66,16 @@ export function buildOperationContract(req: DFRequest): {
   const repEmail = d.projectManagerEmail || BLANK;
   const repPhone = d.projectManagerPhone || BLANK;
 
+  // The Scope of Work (the request's description) drives the contract content.
+  const scopeParas = (req.description || "")
+    .split(/\r?\n\s*\r?\n|\r?\n/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const scopeAr = scopeParas.length ? scopeParas.join("\n") : BLANK;
+  const scopeHtml = scopeParas.length
+    ? scopeParas.map((p) => `<p>${esc(p)}</p>`).join("\n")
+    : `<p>${BLANK}</p>`;
+
   const title = `عقد تشغيل — ${projectName} — ${operator}`;
 
   const bodyAr = `عقد تشغيل
@@ -75,6 +85,9 @@ ${operator}، مسجلة بموجب سجل تجاري رقم (${BLANK}) وعنو
 
 تمهيد
 حيث تلاقت رغبة الطرفان في قيام الطرف الثاني بتشغيل مساحة محددة لأغراض تجارية وخدمية للفعالية التي يديرها الطرف الأول ورغبةً من الطرفان في توثيق الحقوق والإلتزامات بينهما، وتحديد الشروط والمواصفات اللازمة لإتمام الأعمال الواردة بهذا العقد، أبرم الطرفان هذا العقد وهما بكامل الأهلية الشرعية والنظامية، واتفقا على الآتي:
+
+نطاق العمل
+${scopeAr}
 
 القسم الأول: المعلومات العامة للموقع والمشروع
 اسم المشروع: ${projectName}
@@ -136,6 +149,9 @@ ${operator}, Commercial Registration No. (${BLANK}), address: ${address}, Kingdo
 PREAMBLE
 Whereas the parties wish for the Second Party to operate a designated space for commercial and service purposes within the event managed by the First Party, the parties have entered into this Contract and agreed as follows:
 
+SCOPE OF WORK
+${scopeParas.length ? scopeParas.join("\n") : BLANK}
+
 SECTION 1 — GENERAL SITE & PROJECT INFORMATION
 Project Name: ${projectName}
 Event: ${event}
@@ -191,6 +207,9 @@ Operating-time/terms violations, cleanliness & public-health violations, and gen
 
 <h2 class="ct-h2">تمهيد — Preamble</h2>
 <p>حيث تلاقت رغبة الطرفان في قيام الطرف الثاني بتشغيل مساحة محددة لأغراض تجارية وخدمية للفعالية التي يديرها الطرف الأول ورغبةً من الطرفان في توثيق الحقوق والإلتزامات بينهما، وتحديد الشروط والمواصفات اللازمة لإتمام الأعمال الواردة بهذا العقد، أبرم الطرفان هذا العقد وهما بكامل الأهلية الشرعية والنظامية، واتفقا على الآتي:</p>
+
+<h2 class="ct-h2">نطاق العمل — Scope of Work</h2>
+${scopeHtml}
 
 <h2 class="ct-h2">القسم الأول: المعلومات العامة للموقع والمشروع</h2>
 <table class="ct-table">
