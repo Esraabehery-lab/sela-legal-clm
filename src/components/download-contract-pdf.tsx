@@ -29,7 +29,6 @@ const PRINT_CSS = `
   ol.ct-terms { padding-inline-start:20px; } ol.ct-terms li { margin-bottom:8px; }
   .ct-note { font-size:11.5px; color:#555; }
   .ct-edit { background:#fff3b0; color:#6b5200; border-radius:2px; padding:0 2px; box-decoration-break:clone; }
-  .ct-edit::after { content:" (" attr(data-author) ")"; font-size:0.62em; font-weight:700; color:#8a6d00; vertical-align:super; }
 `;
 
 /** Opens a print-ready view of the contract (Save as PDF preserves tables/colors). */
