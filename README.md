@@ -30,30 +30,43 @@ resets the seeded data.
 
 ## Deploy a public demo (so anyone can test)
 
-This app keeps its data **in memory / a local file**, so deploy it as a
-**persistent server** (Render / Railway) rather than a serverless host —
-that way the multi-step approval workflow keeps its state during a session.
+You get a permanent public URL for free — **no credit card required.**
 
-### One-click on Render (recommended)
+### One-click on Vercel (free, no card)
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Esraabehery-lab/sela-legal-clm)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Esraabehery-lab/sela-legal-clm)
 
-1. Click the button (it reads `render.yaml` in this repo).
-2. Sign in with GitHub and confirm — Render runs `pnpm install && pnpm build`
-   and starts the server.
-3. After ~2–3 minutes you get a public URL like
-   `https://sela-legal-clm.onrender.com` — share it so anyone can test.
+1. Click the button → sign in with **GitHub** (Vercel's *Hobby* plan is free
+   and never asks for a credit card).
+2. Confirm the import and click **Deploy**. Vercel auto-detects Next.js and
+   builds it.
+3. After ~1–2 minutes you get a public URL like
+   `https://sela-legal-clm.vercel.app` — share it so anyone can test.
 
-> Free Render services sleep after inactivity, so the first visit may take
-> ~30–50s to wake. Data resets on each redeploy/restart (it's a demo store).
+> Note: Vercel runs serverless, so the in-memory demo store isn't shared
+> across requests — every visitor starts from the same seeded data and can
+> click through the flow. That's perfect for showing the project; it just
+> doesn't persist changes globally between people.
 
-### Alternatives
+### Want changes to persist live? Use a free tunnel (no account, no card)
 
-- **Railway** — New Project → Deploy from GitHub repo → it auto-detects
-  Next.js; set the start command to `pnpm start`.
-- **Vercel** works for the UI, but because it's serverless the in-memory
-  store isn't shared between requests, so the live workflow state won't
-  persist reliably — prefer Render/Railway for a working end-to-end demo.
+Run the app locally and expose it with a free Cloudflare quick tunnel — the
+URL is public and the full workflow state works (it's your local server):
+
+```bash
+pnpm build && pnpm start            # runs on http://localhost:3002
+npx cloudflared tunnel --url http://localhost:3002
+```
+
+Cloudflare prints a public `https://<random>.trycloudflare.com` link. It
+stays up while your machine runs the command — great for a live walkthrough.
+
+### Other free options
+
+- **Netlify** — free, no card; import the GitHub repo (same serverless note
+  as Vercel).
+- **Render** — `render.yaml` is included; New → Blueprint. (Persistent server,
+  so state holds, but Render now asks to verify a card on sign-up.)
 
 > To enable auto-sending the third-party contract link by email, set the
 > `SMTP_*` environment variables (see `.env.example`) in your host's dashboard.
