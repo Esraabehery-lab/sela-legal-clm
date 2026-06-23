@@ -67,8 +67,8 @@ export function RichContract({
             <Pencil className="h-3.5 w-3.5" />
             {t(
               locale,
-              "Editable — your changes are highlighted in yellow with your name. Type, then Save Version.",
-              "قابل للتعديل — تظهر تغييراتك بالأصفر مع اسمك. اكتب ثم احفظ النسخة.",
+              "Editable — your changes are highlighted in yellow. Type, then Save Version.",
+              "قابل للتعديل — تظهر تغييراتك بالأصفر. اكتب ثم احفظ النسخة.",
             )}
           </p>
         ) : (
