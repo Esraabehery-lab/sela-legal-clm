@@ -46,6 +46,39 @@ export function ExternalReviewForm({
         const arrayBuffer = await file.arrayBuffer();
         const result = await mammoth.convertToHtml({ arrayBuffer });
         docHtml = result.value;
+      } else if (fname.endsWith(".pdf")) {
+        const pdfjs: any = await import("pdfjs-dist");
+        // Worker is served as a static asset from /public (avoids bundling it).
+        pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+        const data = await file.arrayBuffer();
+        const pdf = await pdfjs.getDocument({ data }).promise;
+        const paras: string[] = [];
+        for (let p = 1; p <= pdf.numPages; p++) {
+          const page = await pdf.getPage(p);
+          const content = await page.getTextContent();
+          // Group text items into lines by their vertical position.
+          const lines = new Map<number, string[]>();
+          for (const item of content.items as any[]) {
+            const y = Math.round(item.transform[5]);
+            if (!lines.has(y)) lines.set(y, []);
+            lines.get(y)!.push(item.str);
+          }
+          [...lines.entries()]
+            .sort((a, b) => b[0] - a[0])
+            .forEach(([, parts]) => {
+              const line = parts.join(" ").trim();
+              if (line) paras.push(line);
+            });
+        }
+        docHtml = paras
+          .map(
+            (line) =>
+              `<p>${line
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")}</p>`,
+          )
+          .join("");
       } else if (
         fname.endsWith(".txt") ||
         fname.endsWith(".md") ||
@@ -70,8 +103,8 @@ export function ExternalReviewForm({
         toast.error(
           t(
             locale,
-            "Unsupported file — please upload a .docx or .txt file.",
-            "ملف غير مدعوم — يرجى رفع ملف .docx أو .txt.",
+            "Unsupported file — please upload a .pdf, .docx, or .txt file.",
+            "ملف غير مدعوم — يرجى رفع ملف .pdf أو .docx أو .txt.",
           ),
         );
         return;
@@ -110,7 +143,7 @@ export function ExternalReviewForm({
         <input
           ref={fileRef}
           type="file"
-          accept=".docx,.txt,.md,.html"
+          accept=".pdf,.docx,.txt,.md,.html"
           hidden
           onChange={onFile}
         />
@@ -130,8 +163,8 @@ export function ExternalReviewForm({
       <p className="text-xs text-ink-500">
         {t(
           locale,
-          "Edit the contract below, or download it, edit it offline, and upload the revised file (.docx / .txt). Your version is sent back to SELA on Approve.",
-          "عدّل العقد بالأسفل، أو نزّله وعدّله ثم ارفع الملف المُعدّل (.docx / .txt). تُرسل نسختك إلى صلة عند الموافقة.",
+          "Edit the contract below, or download it, edit it offline, and upload the revised file (.pdf / .docx / .txt). Your version is sent back to SELA on Approve.",
+          "عدّل العقد بالأسفل، أو نزّله وعدّله ثم ارفع الملف المُعدّل (.pdf / .docx / .txt). تُرسل نسختك إلى صلة عند الموافقة.",
         )}
       </p>
       <div
