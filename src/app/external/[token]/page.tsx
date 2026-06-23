@@ -106,10 +106,14 @@ export default function ExternalReviewPage({
                   )}
                 </div>
               </div>
-              <div
-                className="contract-doc max-h-[420px] overflow-auto"
-                dangerouslySetInnerHTML={{ __html: html }}
-              />
+              {req.thirdPartyUpload ? (
+                <UploadedContract upload={req.thirdPartyUpload} locale={locale} />
+              ) : (
+                <div
+                  className="contract-doc max-h-[420px] overflow-auto"
+                  dangerouslySetInnerHTML={{ __html: html }}
+                />
+              )}
               <ExternalSignForm token={params.token} locale={locale} />
             </div>
           ) : (
@@ -164,13 +168,14 @@ export default function ExternalReviewPage({
                   )}
                 </div>
               </div>
-              {req.thirdPartyUpload && (
+              {req.thirdPartyUpload ? (
                 <UploadedContract upload={req.thirdPartyUpload} locale={locale} />
+              ) : (
+                <div
+                  className="contract-doc max-h-[520px] overflow-auto"
+                  dangerouslySetInnerHTML={{ __html: html }}
+                />
               )}
-              <div
-                className="contract-doc max-h-[520px] overflow-auto"
-                dangerouslySetInnerHTML={{ __html: html }}
-              />
             </>
           )}
           </>

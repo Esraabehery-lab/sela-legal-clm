@@ -500,13 +500,15 @@ export default function RequestDetailPage({
                     )}
                   </div>
                 )}
-                <RichContract
-                  requestId={req.id}
-                  html={req.draft.bodyHtml}
-                  canEdit={canEditDraft}
-                  fileName={`${req.reference}.pdf`}
-                  locale={locale}
-                />
+                {!req.thirdPartyUpload && (
+                  <RichContract
+                    requestId={req.id}
+                    html={req.draft.bodyHtml}
+                    canEdit={canEditDraft}
+                    fileName={`${req.reference}.pdf`}
+                    locale={locale}
+                  />
+                )}
 
                 {/* Version history (US-007) */}
                 {req.versions.length > 0 && (

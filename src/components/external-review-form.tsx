@@ -112,19 +112,27 @@ export function ExternalReviewForm({
         </Button>
       </div>
       <p className="text-xs text-ink-500">
-        {t(
-          locale,
-          "Download the contract, edit it offline, and upload your revised file (.pdf / .docx) — it's kept exactly as uploaded. Or edit inline below. Your version is sent to SELA on Approve.",
-          "نزّل العقد وعدّله ثم ارفع ملفك المُعدّل (.pdf / .docx) — يُحفظ كما هو. أو عدّله مباشرةً بالأسفل. تُرسل نسختك إلى صلة عند الموافقة.",
-        )}
+        {upload
+          ? t(
+              locale,
+              "Your uploaded file above is the revised contract. Use “Replace upload” to change it. It's sent to SELA on Approve.",
+              "ملفك المرفوع بالأعلى هو العقد المُعدّل. استخدم «استبدال الملف» لتغييره. يُرسل إلى صلة عند الموافقة.",
+            )
+          : t(
+              locale,
+              "Download the contract, edit it offline, and upload your revised file (.pdf / .docx) — it's kept exactly as uploaded. Or edit inline below. Your version is sent to SELA on Approve.",
+              "نزّل العقد وعدّله ثم ارفع ملفك المُعدّل (.pdf / .docx) — يُحفظ كما هو. أو عدّله مباشرةً بالأسفل. تُرسل نسختك إلى صلة عند الموافقة.",
+            )}
       </p>
-      <div
-        ref={docRef}
-        className="contract-doc max-h-[560px] overflow-auto"
-        contentEditable
-        suppressContentEditableWarning
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
+      {!upload && (
+        <div
+          ref={docRef}
+          className="contract-doc max-h-[560px] overflow-auto"
+          contentEditable
+          suppressContentEditableWarning
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      )}
 
       <div className="space-y-1">
         <label className="text-sm font-medium text-ink-100">
