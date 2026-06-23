@@ -7,6 +7,7 @@ import { ExternalReviewForm } from "@/components/external-review-form";
 import { ExternalSignForm } from "@/components/external-sign-form";
 import { OtpGate } from "@/components/otp-gate";
 import { DownloadContractPdf } from "@/components/download-contract-pdf";
+import { UploadedContract } from "@/components/uploaded-contract";
 import { getRequestByToken } from "@/lib/store";
 import { getLocale } from "@/lib/prefs";
 import { t } from "@/lib/i18n";
@@ -76,7 +77,12 @@ export default function ExternalReviewPage({
                   "يرجى مراجعة العقد (يمكنكم تعديله) وإرسال ردكم.",
                 )}
               </p>
-              <ExternalReviewForm token={params.token} html={html} locale={locale} />
+              <ExternalReviewForm
+                token={params.token}
+                html={html}
+                upload={req.thirdPartyUpload}
+                locale={locale}
+              />
             </div>
           ) : req.status === "THIRD_PARTY_SIGNATURE" ? (
             <div className="space-y-3 border-t border-line pt-4">
@@ -158,6 +164,9 @@ export default function ExternalReviewPage({
                   )}
                 </div>
               </div>
+              {req.thirdPartyUpload && (
+                <UploadedContract upload={req.thirdPartyUpload} locale={locale} />
+              )}
               <div
                 className="contract-doc max-h-[520px] overflow-auto"
                 dangerouslySetInnerHTML={{ __html: html }}

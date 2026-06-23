@@ -810,34 +810,29 @@ const tpReviewSchema = z.object({
 });
 
 /**
- * The third party uploads a revised contract file — it replaces the current
- * contract document immediately (version-tracked) so the old one is swapped out.
+ * The third party uploads a revised contract file. We keep the file exactly as
+ * uploaded (stored as a data URL) so it can be downloaded and viewed in full —
+ * this becomes the revised contract of record sent back to the business user.
  */
-export async function replaceContractByThirdParty(
-  formData: FormData,
-): Promise<void> {
+export async function uploadThirdPartyFile(formData: FormData): Promise<void> {
   const token = String(formData.get("token") ?? "");
-  const body = String(formData.get("body") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const dataUrl = String(formData.get("dataUrl") ?? "");
   const req = getRequestByToken(token);
   if (!req || !req.draft || req.status !== "THIRD_PARTY_REVIEW") return;
-  if (!body.trim() || body === req.draft.bodyHtml) return;
+  if (!name || !dataUrl.startsWith("data:")) return;
   const actor = req.thirdParty?.company ?? "Third Party";
-  req.versions.unshift({
-    version: req.draft.version,
-    bodyEn: req.draft.bodyEn,
-    savedAt: req.draft.updatedAt,
-    savedBy: actor,
-    note: "Replaced by third-party upload",
-  });
-  req.draft.bodyHtml = body;
-  req.draft.bodyEn = htmlToText(body);
-  req.draft.version += 1;
-  req.draft.updatedAt = new Date().toISOString();
+  req.thirdPartyUpload = {
+    name,
+    dataUrl,
+    uploadedAt: new Date().toISOString(),
+    uploadedBy: actor,
+  };
   audit(
     req,
     actor,
-    "Contract replaced",
-    `Third party uploaded a new contract document (v${req.draft.version})`,
+    "Contract uploaded",
+    `Revised contract file uploaded: ${name}`,
   );
   revalidatePath(`/external/${token}`);
   revalidatePath(`/requests/${req.id}`);

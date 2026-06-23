@@ -4,25 +4,27 @@ import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { submitThirdPartyReview, replaceContractByThirdParty } from "@/lib/actions";
+import { submitThirdPartyReview, uploadThirdPartyFile } from "@/lib/actions";
+import { UploadedContract } from "@/components/uploaded-contract";
 import { t } from "@/lib/i18n";
-import type { Locale } from "@/lib/types";
+import type { Locale, ThirdPartyUpload } from "@/lib/types";
 import { toast } from "sonner";
 import { Check, Upload } from "lucide-react";
 
 /**
- * The third party reviews and may edit the rich contract document — either by
- * typing inline, or by downloading it, editing offline, and uploading the
- * revised file (.docx / .txt). On Approve the (possibly replaced) document is
- * sent back to the business user.
+ * The third party reviews the contract. They can edit it inline, or download
+ * it, edit it offline, and upload the revised file — which is kept exactly as
+ * uploaded (downloadable in full) and sent back to the business user on Approve.
  */
 export function ExternalReviewForm({
   token,
   html,
+  upload,
   locale,
 }: {
   token: string;
   html: string;
+  upload?: ThirdPartyUpload;
   locale: Locale;
 }) {
   const docRef = React.useRef<HTMLDivElement>(null);
@@ -33,95 +35,32 @@ export function ExternalReviewForm({
   const [pending, start] = React.useTransition();
   const ready = name.trim().length >= 2 && !pending && !busy;
 
+  function readAsDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+  }
+
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setBusy(true);
     try {
-      const fname = file.name.toLowerCase();
-      let docHtml = "";
-      if (fname.endsWith(".docx")) {
-        const mod: any = await import("mammoth");
-        const mammoth = mod.default ?? mod;
-        const arrayBuffer = await file.arrayBuffer();
-        const result = await mammoth.convertToHtml({ arrayBuffer });
-        docHtml = result.value;
-      } else if (fname.endsWith(".pdf")) {
-        const pdfjs: any = await import("pdfjs-dist");
-        // Worker is served as a static asset from /public (avoids bundling it).
-        pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-        const data = await file.arrayBuffer();
-        const pdf = await pdfjs.getDocument({ data }).promise;
-        const paras: string[] = [];
-        for (let p = 1; p <= pdf.numPages; p++) {
-          const page = await pdf.getPage(p);
-          const content = await page.getTextContent();
-          // Group text items into lines by their vertical position.
-          const lines = new Map<number, string[]>();
-          for (const item of content.items as any[]) {
-            const y = Math.round(item.transform[5]);
-            if (!lines.has(y)) lines.set(y, []);
-            lines.get(y)!.push(item.str);
-          }
-          [...lines.entries()]
-            .sort((a, b) => b[0] - a[0])
-            .forEach(([, parts]) => {
-              const line = parts.join(" ").trim();
-              if (line) paras.push(line);
-            });
-        }
-        docHtml = paras
-          .map(
-            (line) =>
-              `<p>${line
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")}</p>`,
-          )
-          .join("");
-      } else if (
-        fname.endsWith(".txt") ||
-        fname.endsWith(".md") ||
-        fname.endsWith(".html") ||
-        file.type.startsWith("text/")
-      ) {
-        const text = await file.text();
-        docHtml = fname.endsWith(".html")
-          ? text
-          : text
-              .split(/\n{2,}/)
-              .map(
-                (p) =>
-                  `<p>${p
-                    .replace(/&/g, "&amp;")
-                    .replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;")
-                    .replace(/\n/g, "<br/>")}</p>`,
-              )
-              .join("");
-      } else {
-        toast.error(
-          t(
-            locale,
-            "Unsupported file — please upload a .pdf, .docx, or .txt file.",
-            "ملف غير مدعوم — يرجى رفع ملف .pdf أو .docx أو .txt.",
-          ),
-        );
-        return;
-      }
-      if (docRef.current) docRef.current.innerHTML = docHtml;
-      // Replace the stored contract immediately so the old document is swapped
-      // out (not just previewed locally).
+      const dataUrl = await readAsDataUrl(file);
       const fd = new FormData();
       fd.set("token", token);
-      fd.set("body", docHtml);
-      await replaceContractByThirdParty(fd);
+      fd.set("name", file.name);
+      fd.set("dataUrl", dataUrl);
+      await uploadThirdPartyFile(fd);
       toast.success(
-        t(locale, "Contract replaced with your upload", "تم استبدال العقد بالملف المرفوع"),
+        t(locale, "Contract uploaded", "تم رفع العقد"),
       );
     } catch {
       toast.error(
-        t(locale, "Could not read that file.", "تعذّر قراءة هذا الملف."),
+        t(locale, "Could not upload that file.", "تعذّر رفع هذا الملف."),
       );
     } finally {
       setBusy(false);
@@ -144,6 +83,8 @@ export function ExternalReviewForm({
 
   return (
     <div className="space-y-3">
+      {upload && <UploadedContract upload={upload} locale={locale} />}
+
       <div className="flex flex-wrap items-center justify-between gap-2">
         <label className="text-xs font-medium uppercase tracking-wide text-ink-400">
           {t(locale, "Contract (editable)", "العقد (قابل للتعديل)")}
@@ -151,7 +92,7 @@ export function ExternalReviewForm({
         <input
           ref={fileRef}
           type="file"
-          accept=".pdf,.docx,.txt,.md,.html"
+          accept=".pdf,.docx,.doc,.txt,.md,.html"
           hidden
           onChange={onFile}
         />
@@ -164,15 +105,17 @@ export function ExternalReviewForm({
         >
           <Upload className="h-4 w-4" />
           {busy
-            ? t(locale, "Reading…", "جارٍ القراءة…")
-            : t(locale, "Upload edited contract", "رفع العقد المُعدّل")}
+            ? t(locale, "Uploading…", "جارٍ الرفع…")
+            : upload
+              ? t(locale, "Replace upload", "استبدال الملف")
+              : t(locale, "Upload edited contract", "رفع العقد المُعدّل")}
         </Button>
       </div>
       <p className="text-xs text-ink-500">
         {t(
           locale,
-          "Edit the contract below, or download it, edit it offline, and upload the revised file (.pdf / .docx / .txt). Your version is sent back to SELA on Approve.",
-          "عدّل العقد بالأسفل، أو نزّله وعدّله ثم ارفع الملف المُعدّل (.pdf / .docx / .txt). تُرسل نسختك إلى صلة عند الموافقة.",
+          "Download the contract, edit it offline, and upload your revised file (.pdf / .docx) — it's kept exactly as uploaded. Or edit inline below. Your version is sent to SELA on Approve.",
+          "نزّل العقد وعدّله ثم ارفع ملفك المُعدّل (.pdf / .docx) — يُحفظ كما هو. أو عدّله مباشرةً بالأسفل. تُرسل نسختك إلى صلة عند الموافقة.",
         )}
       </p>
       <div

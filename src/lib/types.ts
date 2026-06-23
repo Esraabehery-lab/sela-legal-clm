@@ -205,6 +205,15 @@ export interface ThirdPartyShare {
   resumeStatus: RequestStatus;
 }
 
+/** A revised contract file uploaded by the third party (kept as-is). */
+export interface ThirdPartyUpload {
+  name: string;
+  /** The file stored as a data URL so it can be downloaded exactly as uploaded. */
+  dataUrl: string;
+  uploadedAt: string;
+  uploadedBy: string;
+}
+
 /** The external third party's review response. */
 export interface ThirdPartyReview {
   name: string;
@@ -251,6 +260,8 @@ export interface DFRequest {
   // External third-party (counterparty) review via email link.
   thirdParty?: ThirdPartyShare;
   thirdPartyReview?: ThirdPartyReview;
+  /** A revised contract file the third party uploaded (downloadable as-is). */
+  thirdPartyUpload?: ThirdPartyUpload;
   /** Business user's final confirmation after the third party approved. */
   finalConfirmedBy?: string;
   finalConfirmedAt?: string;

@@ -44,6 +44,7 @@ import {
 import { ApprovalActions } from "@/components/approval-actions";
 import { ApprovalProgress } from "@/components/approval-progress";
 import { DownloadContractPdf } from "@/components/download-contract-pdf";
+import { UploadedContract } from "@/components/uploaded-contract";
 import { ContractReviewActions } from "@/components/contract-review-actions";
 import { SignContract } from "@/components/sign-contract";
 import { ShareThirdParty } from "@/components/share-third-party";
@@ -374,6 +375,9 @@ export default function RequestDetailPage({
                     canFinalConfirm={canConfirmAfterThirdParty(role, req.status)}
                     locale={locale}
                   />
+                )}
+                {req.thirdPartyUpload && (
+                  <UploadedContract upload={req.thirdPartyUpload} locale={locale} />
                 )}
                 {canConfirm && (
                   <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-sela-mint/30 bg-sela-mint/[0.06] p-4">
