@@ -633,12 +633,26 @@ export async function signByUser(formData: FormData): Promise<void> {
       `Signed by the user — sent to ${req.thirdParty.company} to sign`,
     );
   } else {
-    req.status = "LEGAL_SIGNATURE";
+    // No third party: the user's signature executes the contract. The Legal
+    // Reviewer no longer counter-signs — they're just notified that the user
+    // signed.
+    const now = req.signedByUserAt;
+    req.signedAt = now;
+    req.signedBy = signerName;
+    req.status = "SIGNED";
     audit(
       req,
       signerName,
       "Signed by user",
-      "Contract signed by the user — sent to Legal Reviewer to counter-sign",
+      "Contract signed by the user — Legal Reviewer notified",
+    );
+    req.obligations = extractObligations(req);
+    req.status = "ACTIVE";
+    audit(
+      req,
+      "AI Engine",
+      "Obligations extracted",
+      `${req.obligations.length} obligations assigned to departments`,
     );
   }
   revalidatePath(`/requests/${req.id}`);

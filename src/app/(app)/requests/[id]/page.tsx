@@ -40,7 +40,6 @@ import {
   finalApproveContract,
   confirmFinalContract,
   signByUser,
-  signByLegal,
 } from "@/lib/actions";
 import { ApprovalActions } from "@/components/approval-actions";
 import { ApprovalProgress } from "@/components/approval-progress";
@@ -54,7 +53,6 @@ import {
   canEditDraft as canEditDraftFn,
   canSubmitForApproval,
   canSignByUser,
-  canSignByLegal,
   canShareThirdParty,
   canConfirmAfterThirdParty,
   canManageObligations as canManageObligationsFn,
@@ -98,7 +96,11 @@ export default function RequestDetailPage({
   const canEditDraft = canEditDraftFn(role, req.status);
   const canSubmit = canSubmitForApproval(role, req.status);
   const canUserSign = canSignByUser(role, req.status);
-  const canLegalSign = canSignByLegal(role, req.status);
+  // The Legal Reviewer is notified once the user signs (no counter-signature).
+  const legalNotifiedUserSigned =
+    (role === "LEGAL" || role === "LEGAL_OPS") &&
+    !!req.signedByUser &&
+    !req.thirdParty;
   const canManageObligations = canManageObligationsFn(role);
   const canUpload = canUploadDocuments(role);
   const canReRunAi = canRunAi(role);
@@ -430,25 +432,33 @@ export default function RequestDetailPage({
                     action={signByUser}
                     title={t(
                       locale,
-                      "Procurement, Finance and Legal have approved. Sign the contract with your name.",
-                      "اعتمدت المشتريات والمالية والقانونية العقد. وقّع العقد باسمك.",
+                      "Procurement, Finance and Legal have approved. Sign the contract with your name to execute it.",
+                      "اعتمدت المشتريات والمالية والقانونية العقد. وقّع العقد باسمك لتنفيذه.",
                     )}
-                    buttonLabel={t(locale, "Sign & Send to Legal", "توقيع وإرسال للقانونية")}
+                    buttonLabel={t(locale, "Sign & Execute Contract", "توقيع وتنفيذ العقد")}
                     locale={locale}
                   />
                 )}
-                {canLegalSign && (
-                  <SignContract
-                    requestId={req.id}
-                    action={signByLegal}
-                    title={t(
-                      locale,
-                      "The user has signed. Sign with your name to give the final approval and execute.",
-                      "وقّع المستخدم. وقّع باسمك لمنح الاعتماد النهائي وتنفيذ العقد.",
-                    )}
-                    buttonLabel={t(locale, "Sign & Final Approve", "توقيع واعتماد نهائي")}
-                    locale={locale}
-                  />
+                {legalNotifiedUserSigned && (
+                  <div className="flex items-start gap-2.5 rounded-lg border border-sela-mint/30 bg-sela-mint/[0.06] p-4 text-sm">
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-sela-mint" />
+                    <div className="text-ink-200">
+                      <div className="font-medium text-ink-100">
+                        {t(
+                          locale,
+                          `${req.signedByUser} has signed the contract.`,
+                          `وقّع ${req.signedByUser} العقد.`,
+                        )}
+                      </div>
+                      <div className="text-xs text-ink-400">
+                        {t(
+                          locale,
+                          "The contract is executed and active — no counter-signature is required.",
+                          "تم تنفيذ العقد وأصبح ساريًا — لا حاجة لتوقيع مضاد.",
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 )}
                 {(req.signedByUser || req.signedByLegal || req.signedByThirdParty) && (
                   <div className="space-y-1.5 rounded-lg border border-line bg-surface-1 p-4 text-xs">
